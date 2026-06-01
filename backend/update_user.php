@@ -13,22 +13,38 @@ $input = json_decode(file_get_contents('php://input'), true);
 $id = $input['edit_id'] ?? '';
 $role = $input['new_user_role'] ?? 'user';
 $nova_senha = $input['new_user_pass'] ?? '';
+$ativo = isset($input['ativo']) ? (int)$input['ativo'] : null;
+$subunidade = $input['new_user_subunidade'] ?? null;
+$nome = $input['nome'] ?? null;
+$posto_grad = $input['posto_grad'] ?? null;
 
 if (empty($id)) {
-    echo json_encode(['status' => 'erro', 'msg' => 'ID não encontrado.']);
+    echo json_encode(['status' => 'erro', 'msg' => 'ID do usuário não informado.']);
     exit;
 }
 
 try {
-    if (empty($nova_senha)) {
-        $sql = "UPDATE tb_usuarios SET role=? WHERE id=?";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$role, $id]);
-    } else {
+    if (!empty($nova_senha)) {
         $hash = password_hash($nova_senha, PASSWORD_DEFAULT);
-        $sql = "UPDATE tb_usuarios SET role=?, senha_hash=? WHERE id=?";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$role, $hash, $id]);
+        if ($ativo !== null) {
+            $sql = "UPDATE tb_usuarios SET role = ?, senha_hash = ?, ativo = ?, subunidade = ?, nome = ?, posto_grad = ? WHERE id = ?";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$role, $hash, $ativo, $subunidade, $nome, $posto_grad, $id]);
+        } else {
+            $sql = "UPDATE tb_usuarios SET role = ?, senha_hash = ?, subunidade = ?, nome = ?, posto_grad = ? WHERE id = ?";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$role, $hash, $subunidade, $nome, $posto_grad, $id]);
+        }
+    } else {
+        if ($ativo !== null) {
+            $sql = "UPDATE tb_usuarios SET role = ?, ativo = ?, subunidade = ?, nome = ?, posto_grad = ? WHERE id = ?";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$role, $ativo, $subunidade, $nome, $posto_grad, $id]);
+        } else {
+            $sql = "UPDATE tb_usuarios SET role = ?, subunidade = ?, nome = ?, posto_grad = ? WHERE id = ?";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$role, $subunidade, $nome, $posto_grad, $id]);
+        }
     }
     echo json_encode(['status' => 'sucesso', 'msg' => 'Atualizado com sucesso!']);
 } catch (Exception $e) {

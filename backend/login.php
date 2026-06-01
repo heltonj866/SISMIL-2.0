@@ -1,5 +1,7 @@
 <?php
-// ARQUIVO: backend/login.php
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
 header('Content-Type: application/json');
 require 'db_connect.php';
 
@@ -21,10 +23,10 @@ try {
         session_start();
         // PADRÃO DE SESSÃO: 'usuario_role'
         $_SESSION['usuario_id'] = $user['id'];
-        $_SESSION['usuario_role'] = $user['role']; 
-        $_SESSION['usuario_idt'] = $user['identidade'];
-
-        echo json_encode(['status' => 'sucesso', 'role' => $user['role']]);
+        $_SESSION['usuario_role'] = $user['role'];
+        $_SESSION['usuario_login'] = $user['identidade'];
+        $_SESSION['usuario_sub'] = $user['subunidade'] ?? '';
+        echo json_encode(['status' => 'sucesso', 'role' => $user['role'], 'subunidade' => $_SESSION['usuario_sub']]);
     } else {
         echo json_encode(['status' => 'erro', 'msg' => 'Login ou senha incorretos.']);
     }

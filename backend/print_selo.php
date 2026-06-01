@@ -38,14 +38,15 @@ try {
     elseif (in_array($posto, $graduados)) $cor_tema = '#0033cc'; // Azul
     else $cor_tema = '#006600'; // Verde
 
-    // Lógica da Validade (CRLV + 1 Ano)
-    if (!empty($m['validade_crlv'])) {
-        $nova_data = strtotime('+1 year', strtotime($m['validade_crlv']));
+    // Lógica da Validade: Emissão do CRLV + 1 Ano
+    $campo_data = !empty($m['emissao_crlv']) ? $m['emissao_crlv'] : ($m['validade_crlv'] ?? null);
+    if (!empty($campo_data)) {
+        $nova_data = strtotime('+1 year', strtotime($campo_data));
         $meses = [1=>'JANEIRO', 2=>'FEVEREIRO', 3=>'MARÇO', 4=>'ABRIL', 5=>'MAIO', 6=>'JUNHO', 7=>'JULHO', 8=>'AGOSTO', 9=>'SETEMBRO', 10=>'OUTUBRO', 11=>'NOVEMBRO', 12=>'DEZEMBRO'];
         $dia = date('d', $nova_data);
         $mes = $meses[(int)date('m', $nova_data)];
         $ano = date('Y', $nova_data);
-        $validade_texto = "VALIDADE: $dia DE $mes $ano";
+        $validade_texto = "VÁLIDO ATÉ: $dia DE $mes DE $ano";
     } else {
         $validade_texto = "VALIDADE: INDEFINIDA";
     }

@@ -1,0 +1,227 @@
+<template>
+  <div class="militares-view">
+    <header class="page-header d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h2>Gestão de Militares</h2>
+        <p class="text-muted">Busca, Cadastro e Ficha Completa</p>
+      </div>
+      <!-- Novo Cadastro: somente admin e sargenteacao -->
+      <button v-if="canEdit" class="btn-modern btn-success" @click="handleNovo">
+        <i class="fas fa-user-plus"></i> Novo Cadastro
+      </button>
+    </header>
+
+    <div v-if="!showForm">
+      <!-- Painel de Busca -->
+      <div class="search-panel glass-panel mb-4">
+        <form @submit.prevent="handleSearch" class="search-form">
+          <div class="input-group">
+            <label>Nome / Guerra</label>
+            <input type="text" v-model="filters.termo" class="input-modern" placeholder="Digite para buscar...">
+          </div>
+          <div class="input-group">
+            <label>Posto/Grad</label>
+            <select v-model="filters.posto" class="input-modern">
+              <option value="">Todos</option>
+              <option v-for="p in postos" :key="p" :value="p">{{ p }}</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label>Subunidade</label>
+            <select v-model="filters.subunidade" class="input-modern">
+              <option value="">Todas</option>
+              <option value="Cmdo">Cmdo</option>
+              <option value="EM">EM</option>
+              <option value="PMGu">PMGu</option>
+              <option value="Cia E Eqp Mnt">Cia E Eqp Mnt</option>
+              <option value="1ª Cia E Cnst">1ª Cia E Cnst</option>
+              <option value="Cia C Ap">Cia C Ap</option>
+              <option value="2ª Cia E Cnst">2ª Cia E Cnst</option>
+              <option value="NPOR">NPOR</option>
+            </select>
+          </div>
+          <!-- Mostrar inativos: somente admin e sargenteacao -->
+          <div class="input-group" v-if="canEdit">
+            <label>&nbsp;</label>
+            <div class="checkbox-wrap">
+              <input type="checkbox" v-model="filters.inativos" id="chkInativos">
+              <label for="chkInativos">Exibir Desligados</label>
+            </div>
+          </div>
+          <div class="input-group" style="align-self: flex-end;">
+            <button type="submit" class="btn-modern btn-primary w-100" :disabled="loading">
+              <i class="fas fa-search"></i> {{ loading ? 'Buscando...' : 'Buscar' }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Resultados -->
+      <div class="results-area" v-if="hasSearched">
+        <div class="results-header">
+          <h5>Resultados <span class="badge badge-secondary">{{ searchResults.length }}</span></h5>
+          <div class="d-flex gap-2" v-if="canEdit">
+            <button class="btn-modern btn-secondary-outline btn-sm" @click="handleExportar">
+              <i class="fas fa-file-excel"></i> Exportar Lista
+            </button>
+          </div>
+        </div>
+
+        <div class="results-grid">
+          <MilitarCard
+            v-for="m in searchResults"
+            :key="m.id"
+            :militar="m"
+            @editar="handleEdit"
+            @desligar="abrirDesligar"
+            @reativar="handleReativar"
+            @inspecionar="handleInspecionar"
+            @verFicha="abrirModalLeitura"
+            @resumo="abrirResumo"
+          />
+          <div v-if="searchResults.length === 0" class="no-results">
+            Nenhum registro encontrado.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulário completo (admin/sargenteacao/s2) -->
+    <div class="form-area" v-if="showForm">
+      <MilitarForm
+        :militar="selectedMilitar"
+        :modoS2="modoS2"
+        :readonlyAll="readonlyAll"
+        @cancel="closeForm"
+        @saved="handleSaved"
+      />
+    </div>
+
+    <!-- Modal Leitura (user) -->
+    <MilitarModalLeitura
+      :show="showModalLeitura"
+      :militarId="militarLeituraId"
+      :completo="modoCompleto"
+      @close="showModalLeitura = false"
+    />
+
+    <!-- Modal de Desligamento (requer PDF) -->
+    <DesligarModal
+      :show="showDesligarModal"
+      :militar="militarParaDesligar"
+      @close="showDesligarModal = false"
+      @done="handleDesligarDone"
+    />
+  </div>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue'
+import { useToast, useConfirm } from '../composables/useToast'
+const { error: toastError } = useToast()
+const { ask: confirmDialog } = useConfirm()
+import { useAuthStore } from '../stores/auth'
+import MilitarCard from '../components/MilitarCard.vue'
+import MilitarForm from '../components/MilitarForm.vue'
+import MilitarModalLeitura from '../components/MilitarModalLeitura.vue'
+import DesligarModal from '../components/DesligarModal.vue'
+
+const authStore = useAuthStore()
+const canEdit = computed(() => authStore.canEdit)
+
+const postos = ["Cel", "TC", "Maj", "Cap", "1º Ten", "2º Ten", "Asp", "S Ten", "1º Sgt", "2º Sgt", "3º Sgt", "Alu", "Cb", "Sd EP", "Sd EV", "SC"]
+const filters = ref({ termo: '', posto: '', subunidade: '', inativos: false })
+const searchResults = ref([])
+const hasSearched = ref(false)
+const loading = ref(false)
+
+const showForm = ref(false)
+const selectedMilitar = ref(null)
+const modoS2 = ref(false)
+const readonlyAll = ref(false)
+
+const showModalLeitura = ref(false)
+const militarLeituraId = ref(null)
+const modoCompleto = ref(false)
+
+const showDesligarModal = ref(false)
+const militarParaDesligar = ref(null)
+
+const handleSearch = async () => {
+  loading.value = true
+  hasSearched.value = true
+  const q = `?termo=${encodeURIComponent(filters.value.termo)}&posto=${encodeURIComponent(filters.value.posto)}&subunidade=${encodeURIComponent(filters.value.subunidade)}&inativos=${filters.value.inativos ? 1 : 0}`
+  try {
+    const res = await fetch('/sismil/backend/search.php' + q)
+    const json = await res.json()
+    if (json.status === 'sucesso') searchResults.value = json.dados
+  } catch (e) { toastError('Erro de conexão.') }
+  finally { loading.value = false }
+}
+
+// admin/sargenteacao: abre ficha para edição
+const handleNovo = () => { selectedMilitar.value = null; modoS2.value = false; readonlyAll.value = false; showForm.value = true }
+const handleEdit = (m) => { selectedMilitar.value = m; modoS2.value = false; readonlyAll.value = false; showForm.value = true }
+
+// s2: abre ficha em modo inspeção
+const handleInspecionar = (m) => { selectedMilitar.value = m; modoS2.value = true; readonlyAll.value = false; showForm.value = true }
+
+// user: abre modal de leitura (ficha completa)
+const abrirModalLeitura = (m) => { militarLeituraId.value = m.id; modoCompleto.value = true; showModalLeitura.value = true }
+
+// Abrir resumo rápido (todo role)
+const abrirResumo = (m) => { militarLeituraId.value = m.id; modoCompleto.value = false; showModalLeitura.value = true }
+
+const closeForm = () => { showForm.value = false; selectedMilitar.value = null; modoS2.value = false; readonlyAll.value = false }
+const handleSaved = () => { closeForm(); handleSearch() }
+
+// Desligar: requer modal com upload PDF
+const abrirDesligar = (m) => { militarParaDesligar.value = m; showDesligarModal.value = true }
+const handleDesligarDone = () => { showDesligarModal.value = false; handleSearch() }
+
+// Reativar
+const handleReativar = async (m) => {
+  const ok = await confirmDialog(`Deseja reintegrar o militar ${m.posto_grad} ${m.nome_guerra} ao Efetivo Pronto?`, { title: 'Confirmação' })
+  if (!ok) return
+  try {
+    const res = await fetch('/sismil/backend/reativar_militar.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: m.id })
+    })
+    const json = await res.json()
+    if (json.status === 'sucesso') handleSearch()
+    else toastError('Erro: ' + json.msg)
+  } catch (e) { toastError('Erro de conexão.') }
+}
+
+const handleExportar = () => {
+  window.open('/sismil/backend/export_excel.php?tipo_busca=geral&termo=' + encodeURIComponent(filters.value.termo), '_blank')
+}
+</script>
+
+<style scoped>
+.page-header h2 { margin: 0; color: var(--primary-blue); font-weight: 800; }
+.text-muted { color: var(--text-muted); }
+.mb-4 { margin-bottom: 1.5rem; }
+.mb-3 { margin-bottom: 1rem; }
+
+.search-panel { padding: 1.5rem; background: white; border-radius: var(--radius-lg); }
+.search-form { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 1rem; align-items: flex-start; }
+.input-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.4rem; }
+.checkbox-wrap { display: flex; align-items: center; gap: 0.5rem; padding-top: 0.5rem; }
+.checkbox-wrap label { margin-bottom: 0; font-size: 0.85rem; color: var(--text-main); cursor: pointer; }
+.w-100 { width: 100%; }
+
+.results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; }
+.no-results { grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--text-muted); background: rgba(0,0,0,0.02); border-radius: 8px; }
+
+.d-flex { display: flex; }
+.justify-content-between { justify-content: space-between; }
+.align-items-center { align-items: center; }
+.gap-2 { gap: 0.5rem; }
+
+.badge { padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+.badge-secondary { background: #e9ecef; color: #495057; }
+</style>

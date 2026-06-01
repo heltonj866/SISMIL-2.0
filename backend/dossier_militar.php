@@ -92,7 +92,7 @@ function dataBR($data) { return (!empty($data) && $data != '0000-00-00') ? date(
             </div>
             <div class="row">
                 <div class="col"><div class="label">Idt Militar</div><div class="value"><?php echo $m['idt_militar']; ?></div></div>
-                <div class="col"><div class="label">CPF</div><div class="value"><?php echo $m['identidade']; ?></div></div>
+                <div class="col"><div class="label">CPF</div><div class="value"><?php echo $m['cpf'] ?? '---'; ?></div></div>
                 <div class="col"><div class="label">Nascimento</div><div class="value"><?php echo dataBR($m['dt_nascimento']); ?></div></div>
                 <div class="col"><div class="label">Tipo Sanguíneo</div><div class="value"><?php echo $m['tipo_sanguineo']; ?></div></div>
             </div>

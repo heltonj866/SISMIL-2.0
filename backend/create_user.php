@@ -14,6 +14,9 @@ try {
     $identidade = $input['new_user_idt'] ?? '';
     $senha = $input['new_user_pass'] ?? '';
     $role = $input['new_user_role'] ?? 'user';
+    $subunidade = $input['new_user_subunidade'] ?? null;
+    $nome = $input['nome'] ?? null;
+    $posto_grad = $input['posto_grad'] ?? null;
 
     if (empty($identidade) || empty($senha)) {
         throw new Exception("Preencha Login e Senha.");
@@ -28,12 +31,10 @@ try {
 
     $hash = password_hash($senha, PASSWORD_DEFAULT);
 
-    // 3. Insere APENAS o que a tabela suporta
-    // Ignoramos nome_guerra/posto porque a tabela tb_usuarios foi simplificada no fix_final.php
-    $sql = "INSERT INTO tb_usuarios (identidade, senha_hash, role, ativo) VALUES (?, ?, ?, 1)";
+    $sql = "INSERT INTO tb_usuarios (identidade, senha_hash, role, ativo, subunidade, nome, posto_grad) VALUES (?, ?, ?, 1, ?, ?, ?)";
     $stmt = $pdo->prepare($sql);
     
-    if ($stmt->execute([$identidade, $hash, $role])) {
+    if ($stmt->execute([$identidade, $hash, $role, $subunidade, $nome, $posto_grad])) {
         echo json_encode(['status' => 'sucesso', 'msg' => 'Usuário criado com sucesso!']);
     } else {
         throw new Exception("Erro ao criar usuário.");

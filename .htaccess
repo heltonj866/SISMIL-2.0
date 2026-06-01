@@ -1,0 +1,14 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /sismil/
+  
+  # Ignora a pasta backend para que as APIs continuem funcionando
+  RewriteCond %{REQUEST_URI} ^/sismil/backend/ [NC]
+  RewriteRule ^ - [L]
+
+  # Redireciona tudo que não for um arquivo existente para o index.html (SPA)
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /sismil/index.html [L]
+</IfModule>

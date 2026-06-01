@@ -1,111 +1,49 @@
-# 🔰 SISMIL - Sistema de Gerenciamento Militar
+# SISMIL - Sistema de Gerenciamento Militar
 
-> **Sistema de Gestão de Efetivo e Trânsito para Organizações Militares (OM)**
+O SISMIL foi recentemente migrado para uma arquitetura moderna utilizando **Vue 3 + Vite** no Frontend, mantendo o robusto backend legado em **PHP**.
 
-O **SISMIL** é uma solução web desenvolvida para a gestão digital do efetivo e controle de trânsito (S2). O sistema centraliza dados de militares, veículos e habilitações (CNH), fornecendo ferramentas de homologação e impressão de selos veiculares com controle hierárquico e visualização rápida de dados.
+## Arquitetura Atual
 
----
+- **Frontend (SPA)**: Desenvolvido com Vue 3, Pinia (Gerenciamento de Estado) e Vue Router. O código-fonte reside na pasta `frontend/`.
+- **Backend (API)**: Arquivos PHP legados isolados na pasta `backend/`. Eles agora funcionam como APIs RESTful que consomem e retornam dados em formato JSON.
+- **Banco de Dados**: MySQL gerenciando a base de dados `sismil_db`.
+- **Servidor Web**: Apache (XAMPP). O roteamento do SPA é tratado via `.htaccess` na raiz do projeto.
 
-## 🚀 Funcionalidades Principais
+## Como Desenvolver (Frontend)
 
-### 1. Gestão de Efetivo (Sargenteação)
-- Cadastro completo de militares (Dados Pessoais, Endereço, Contatos de Emergência).
-- Registro de dados militares (Posto/Grad, Nome de Guerra, Subunidade, Pelotão/Seção, QMG).
-- Edição e Exclusão de registros.
-- **Carômetro Digital:** Visualização rápida com fotos para identificação.
+Para realizar modificações no design ou nas funcionalidades visuais:
 
-### 2. Controle de Transporte e Trânsito (2ª Seção - S2)
-- **Cadastro de Veículos:** Placa, Modelo, Cor, Validade CRLV.
-- **Controle de CNH:** Categoria e Validade da habilitação.
-- **Fluxo de Homologação:**
-  - O S2 inspeciona os dados do veículo e condutor.
-  - Aprovação digital (Homologação) via sistema.
-  - O sistema bloqueia a emissão do selo para veículos não homologados.
-- **Selo Veicular Automatizado:**
-  - Geração de selo para impressão com cores hierárquicas (Ex: Vermelho/Oficiais, Azul/Graduados, Verde/Praças).
-  - Brasões da Instituição e da OM integrados.
+1. Acesse o terminal e navegue até a pasta frontend:
+   ```bash
+   cd frontend
+   ```
+2. Instale as dependências (caso seja a primeira vez):
+   ```bash
+   npm install
+   ```
+3. Inicie o servidor de desenvolvimento:
+   ```bash
+   npm run dev
+   ```
+4. O Vite irá iniciar um proxy que encaminha requisições da rota `/backend` para o servidor Apache (`http://localhost/sismil/backend/`).
 
-### 3. Painel de Controle (Dashboard)
-- Indicadores em tempo real:
-  - Efetivo Total Cadastrado.
-  - Tamanho da Frota Veicular da OM.
-  - **Pendências do S2:** Contagem automática de veículos aguardando homologação.
+## Como Fazer o Build (Produção)
 
-### 4. Gestão de Acesso (IAM)
-- Login seguro via Identidade/CPF e Senha.
-- Perfis de acesso com visões distintas:
-  - **Admin:** Acesso total (Gestão de Usuários + Backup BD).
-  - **Sargenteação:** Cadastro e Edição de Pessoal.
-  - **S2 / Transporte:** Homologação e Selos Veiculares.
-  - **Operador (Consulta):** Apenas visualização de fichas (Read-only).
+Sempre que concluir modificações no Frontend, você precisa compilar os arquivos para produção:
 
-### 5. Relatórios e Buscas
-- Busca inteligente por Nome de Guerra, Posto ou QMG.
-- Filtro específico de CNH (Categorias A, B, Profissional).
-- Exportação de listagens para Excel.
-- Impressão de Ficha Individual.
+1. Na pasta `frontend/`, rode:
+   ```bash
+   npm run build
+   ```
+2. O Vite irá gerar uma pasta chamada `dist/`.
+3. Copie o conteúdo de `frontend/dist/` e cole na **raiz do projeto** (`C:\xampp\htdocs\sismil\`), substituindo o arquivo `index.html` e a pasta `assets/`.
 
----
+> A pasta `backend/` e `uploads/` da raiz NUNCA devem ser excluídas, pois elas contêm os scripts da API e as fotos/pdfs dos militares!
 
-## 🛠️ Tecnologias Utilizadas
-
-- **Front-end:** HTML5, CSS3, JavaScript (Vanilla).
-- **Framework Visual:** Bootstrap 5.
-- **Ícones:** FontAwesome 6.
-- **Back-end:** PHP 7.4+ (Nativo, sem frameworks).
-- **Banco de Dados:** MySQL / MariaDB.
-- **Ambiente:** XAMPP (Apache).
-
----
-
-## ⚙️ Instalação e Configuração
-
-### Pré-requisitos
-- Servidor Web (Apache/Nginx) com PHP.
-- Banco de Dados MySQL.
-
-### Passo a Passo
-
-1. **Deploy:**
-   Copie os arquivos para a pasta pública do servidor web.
-
-2. **Banco de Dados:**
-   - Crie um banco de dados (ex: `sismil_db`).
-   - Importe o script SQL fornecido na pasta `database/` para criar a estrutura das tabelas.
-
-3. **Conexão:**
-   - Configure o arquivo `backend/db_connect.php` com as credenciais do seu ambiente local ou servidor.
-
-4. **Personalização Visual:**
-   - Adicione os brasões na pasta `uploads/` para correta geração dos selos:
-     - `brasao.png` (Brasão da Unidade/OM).
-     - `brasao_eb.png` (Brasão da Instituição Superior).
-
----
-
-## 🔐 Regras de Negócio e Perfis
-
-| Perfil | Cadastro de Pessoal | Edição de Dados | Homologação Veicular | Impressão de Selo |
-| :--- | :---: | :---: | :---: | :---: |
-| **Admin** | ✅ | ✅ | ❌ | ✅ |
-| **Sargenteação** | ✅ | ✅ | ❌ | ❌ |
-| **S2 / Transp.** | ❌ | ❌ | ✅ | ✅ |
-| **Consulta** | ❌ | ❌ | ❌ | ❌ |
-
-> **Observação:** O perfil S2 possui visão de "Auditoria". Ele não altera dados pessoais, apenas valida as informações de trânsito inseridas pela Sargenteação e libera a emissão do selo.
-
----
-
-## 📂 Estrutura do Projeto
-
-/
-├── backend/          # API e Lógica PHP
-├── css/              # Estilos
-├── js/               # Scripts do Front-end
-├── uploads/          # Armazenamento de Fotos e Brasões
-├── index.html        # Interface do Usuário
-└── README.md         # Documentação
-
----
-
-*Versão 1.0 - Uso Interno*
+## Estrutura de Pastas na Raiz
+- `/backend`: Scripts PHP.
+- `/uploads`: Diretório para fotos de perfil e `documentos/` para PDFs de nada consta.
+- `/frontend`: Código-fonte Vue 3.
+- `/assets`: Gerado pelo build do Vite.
+- `.htaccess`: Regras do Apache para o roteamento SPA.
+- `index.html`: Arquivo compilado pelo Vite.

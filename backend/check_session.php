@@ -1,5 +1,6 @@
 <?php
 // ARQUIVO: backend/check_session.php
+header("Access-Control-Allow-Credentials: true");
 header('Content-Type: application/json');
 session_start(); // Inicia a verificação da sessão
 
