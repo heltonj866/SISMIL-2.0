@@ -10,8 +10,9 @@ try {
         throw new Exception("Acesso negado.");
     }
 
+    // Aceita tanto JSON (php://input) quanto FormData ($_POST)
     $input = json_decode(file_get_contents('php://input'), true);
-    $idParaApagar = $input['id'] ?? null;
+    $idParaApagar = $input['id'] ?? $_POST['id_user'] ?? $_POST['id'] ?? $input['id_user'] ?? null;
     $idLogado = $_SESSION['usuario_id'] ?? null;
 
     if (!$idParaApagar) throw new Exception("ID inválido.");
