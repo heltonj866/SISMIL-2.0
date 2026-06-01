@@ -31,7 +31,7 @@ echo "📦 Criando banco de dados $DB_NAME (se não existir)..."
 mysql -e "CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"
 
 echo "📥 Importando o banco de dados... (Isso pode levar alguns segundos)"
-mysql $DB_NAME < "$SQL_FILE"
+mysql --binary-mode $DB_NAME < "$SQL_FILE"
 
 if [ $? -eq 0 ]; then
   echo "✅ BANCO IMPORTADO COM SUCESSO!"
