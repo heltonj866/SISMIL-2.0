@@ -272,10 +272,17 @@
               <h6 style="margin: 0; color: var(--primary-blue); font-weight: 700;"><i class="fas fa-camera"></i> Foto de Perfil</h6>
               
               <div style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;">
-                <div v-if="fotoAtual" class="foto-preview-area">
+                <!-- Prévia temporária -->
+                <div v-if="fotoPreviewUrl" class="foto-preview-area">
+                  <img :src="fotoPreviewUrl" alt="Prévia da Foto" class="foto-atual">
+                  <span class="badge" style="background-color: #fef3c7; color: #d97706; font-size: 0.7rem; font-weight: 700; padding: 0.25rem 0.5rem; border-radius: 4px;">Nova foto selecionada</span>
+                </div>
+                <!-- Foto atual do banco -->
+                <div v-else-if="fotoAtual" class="foto-preview-area">
                   <img :src="`/sismil/uploads/${fotoAtual}`" alt="Foto Atual" class="foto-atual" @error="onImgError">
                   <span class="text-muted small">Foto atual</span>
                 </div>
+                <!-- Sem foto -->
                 <div v-else class="foto-preview-area" style="width: 95px; height: 120px; background: #e2e8f0; display:flex; align-items:center; justify-content:center; border-radius:6px; flex-direction: column; gap: 0.5rem;">
                   <i class="fas fa-user text-muted" style="font-size: 2rem;"></i>
                   <span class="text-muted small">Sem foto</span>
@@ -284,6 +291,17 @@
                 <div style="flex: 1; min-width: 200px;">
                   <label style="margin-bottom: 0.5rem; display: block; font-weight: 600; font-size: 0.85rem; color: var(--text-muted);">Anexar nova foto (JPG/PNG)</label>
                   <input type="file" @change="handleFileChange($event, 'foto')" accept="image/*" class="input-modern" :disabled="modoS2">
+                  
+                  <!-- Painel de Instruções -->
+                  <div style="margin-top: 1rem; padding: 0.75rem 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; font-size: 0.75rem; color: #166534;">
+                    <h6 style="margin: 0 0 0.4rem 0; font-weight: 700; color: #15803d; font-size: 0.8rem; display: flex; align-items: center; gap: 0.25rem;"><i class="fas fa-info-circle"></i> Instruções para a Foto:</h6>
+                    <ul style="margin: 0; padding-left: 1.15rem; line-height: 1.4; display: flex; flex-direction: column; gap: 0.2rem;">
+                      <li><strong>Fundo:</strong> Neutro (preferencialmente branco ou azul claro).</li>
+                      <li><strong>Uniforme:</strong> Militar fardado (de acordo com as normas, sem cobertura/boina).</li>
+                      <li><strong>Qualidade:</strong> Rosto centralizado, boa iluminação, foco nítido e de frente.</li>
+                      <li><strong>Formatos aceitos:</strong> JPG, JPEG ou PNG.</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
@@ -380,6 +398,13 @@ const fotoAtual = computed(() => dadosCompletos.value?.foto_path || props.milita
 
 // Busca dados completos quando o militar tem ID
 const fetchDadosCompletos = async () => {
+  // Limpa prévias e arquivos anteriores
+  if (fotoPreviewUrl.value) {
+    URL.revokeObjectURL(fotoPreviewUrl.value)
+  }
+  fotoPreviewUrl.value = null
+  fileUploads.value = { foto: null, nada_consta: null, pdf_habilitacao: null }
+
   const id = props.militar?.id
   if (!id) { dadosCompletos.value = null; return }
   try {
@@ -469,8 +494,22 @@ const form = ref({
 })
 
 const fileUploads = ref({ foto: null, nada_consta: null, pdf_habilitacao: null })
+const fotoPreviewUrl = ref(null)
+
 const handleFileChange = (e, type) => {
-  fileUploads.value[type] = e.target.files.length > 0 ? e.target.files[0] : null
+  const file = e.target.files.length > 0 ? e.target.files[0] : null
+  fileUploads.value[type] = file
+  
+  if (type === 'foto') {
+    if (fotoPreviewUrl.value) {
+      URL.revokeObjectURL(fotoPreviewUrl.value)
+    }
+    if (file) {
+      fotoPreviewUrl.value = URL.createObjectURL(file)
+    } else {
+      fotoPreviewUrl.value = null
+    }
+  }
 }
 const onImgError = (e) => { e.target.src = '/sismil/assets/sem_foto.png' }
 

@@ -40,12 +40,38 @@
               <option value="NPOR">NPOR</option>
             </select>
           </div>
+          <div class="input-group">
+            <label>Mês Aniversário</label>
+            <select v-model="filters.mes_aniversario" class="input-modern">
+              <option value="">Todos</option>
+              <option value="1">Janeiro</option>
+              <option value="2">Fevereiro</option>
+              <option value="3">Março</option>
+              <option value="4">Abril</option>
+              <option value="5">Maio</option>
+              <option value="6">Junho</option>
+              <option value="7">Julho</option>
+              <option value="8">Agosto</option>
+              <option value="9">Setembro</option>
+              <option value="10">Outubro</option>
+              <option value="11">Novembro</option>
+              <option value="12">Dezembro</option>
+            </select>
+          </div>
           <!-- Mostrar inativos: somente admin e sargenteacao -->
           <div class="input-group" v-if="canEdit">
             <label>&nbsp;</label>
             <div class="checkbox-wrap">
               <input type="checkbox" v-model="filters.inativos" id="chkInativos">
               <label for="chkInativos">Exibir Desligados</label>
+            </div>
+          </div>
+          <!-- Mostrar sem foto: somente admin e sargenteacao -->
+          <div class="input-group" v-if="canEdit">
+            <label>&nbsp;</label>
+            <div class="checkbox-wrap">
+              <input type="checkbox" v-model="filters.sem_foto" id="chkSemFoto">
+              <label for="chkSemFoto">Exibir Sem Foto</label>
             </div>
           </div>
           <div class="input-group" style="align-self: flex-end;">
@@ -130,7 +156,7 @@ const authStore = useAuthStore()
 const canEdit = computed(() => authStore.canEdit)
 
 const postos = ["Cel", "TC", "Maj", "Cap", "1º Ten", "2º Ten", "Asp", "S Ten", "1º Sgt", "2º Sgt", "3º Sgt", "Alu", "Cb", "Sd EP", "Sd EV", "SC"]
-const filters = ref({ termo: '', posto: '', subunidade: '', inativos: false })
+const filters = ref({ termo: '', posto: '', subunidade: '', inativos: false, sem_foto: false, mes_aniversario: '' })
 const searchResults = ref([])
 const hasSearched = ref(false)
 const loading = ref(false)
@@ -150,7 +176,7 @@ const militarParaDesligar = ref(null)
 const handleSearch = async () => {
   loading.value = true
   hasSearched.value = true
-  const q = `?termo=${encodeURIComponent(filters.value.termo)}&posto=${encodeURIComponent(filters.value.posto)}&subunidade=${encodeURIComponent(filters.value.subunidade)}&inativos=${filters.value.inativos ? 1 : 0}`
+  const q = `?termo=${encodeURIComponent(filters.value.termo)}&posto=${encodeURIComponent(filters.value.posto)}&subunidade=${encodeURIComponent(filters.value.subunidade)}&inativos=${filters.value.inativos ? 1 : 0}&sem_foto=${filters.value.sem_foto ? 1 : 0}&mes_aniversario=${encodeURIComponent(filters.value.mes_aniversario)}`
   try {
     const res = await fetch('/sismil/backend/search.php' + q)
     const json = await res.json()
@@ -196,7 +222,8 @@ const handleReativar = async (m) => {
 }
 
 const handleExportar = () => {
-  window.open('/sismil/backend/export_excel.php?tipo_busca=geral&termo=' + encodeURIComponent(filters.value.termo), '_blank')
+  const q = `?tipo_busca=geral&termo=${encodeURIComponent(filters.value.termo)}&posto=${encodeURIComponent(filters.value.posto)}&su=${encodeURIComponent(filters.value.subunidade)}&inativos=${filters.value.inativos ? 1 : 0}&sem_foto=${filters.value.sem_foto ? 1 : 0}&mes_aniversario=${encodeURIComponent(filters.value.mes_aniversario)}`
+  window.open('/sismil/backend/export_excel.php' + q, '_blank')
 }
 </script>
 

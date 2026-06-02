@@ -1,5 +1,11 @@
 <?php
 // ARQUIVO: backend/export_excel.php
+session_start();
+if (!isset($_SESSION['usuario_role'])) {
+    header('HTTP/1.1 403 Forbidden');
+    die("Acesso negado. Por favor, faça login.");
+}
+
 require 'db_connect.php';
 
 $arquivo = 'relatorio_efetivo_' . date('d-m-Y') . '.xls';
@@ -11,8 +17,12 @@ header("Expires: 0");
 
 try {
     $tipo = $_GET['tipo_busca'] ?? 'geral';
+    $inativos = isset($_GET['inativos']) && $_GET['inativos'] == '1';
     $params = [];
-    $sql = "SELECT * FROM tb_militares WHERE 1=1"; 
+    $sql = "SELECT * FROM tb_militares WHERE 1=1";
+    if (!$inativos) {
+        $sql .= " AND status_ativo = 1";
+    }
 
     // Lógica de Filtros
     if ($tipo === 'geral') {
@@ -20,6 +30,8 @@ try {
         $posto = $_GET['posto'] ?? '';
         $su    = $_GET['su'] ?? '';
         $qmg   = $_GET['qmg'] ?? '';
+        $sem_foto = isset($_GET['sem_foto']) && $_GET['sem_foto'] == '1';
+        $mes_aniversario = $_GET['mes_aniversario'] ?? '';
 
         if (!empty($termo)) {
             $t = "%" . trim($termo) . "%";
@@ -29,6 +41,17 @@ try {
         if (!empty($posto)) { $sql .= " AND posto_grad = :posto"; $params[':posto'] = $posto; }
         if (!empty($su)) { $sql .= " AND subunidade = :su"; $params[':su'] = $su; }
         if (!empty($qmg)) { $sql .= " AND qmg = :qmg"; $params[':qmg'] = $qmg; }
+
+        if ($sem_foto) {
+            $role_sessao = strtolower(trim($_SESSION['usuario_role'] ?? ''));
+            if (in_array($role_sessao, ['admin', 'sargenteacao'])) {
+                $sql .= " AND (foto_path IS NULL OR foto_path = '' OR foto_path = 'sem_foto.png' OR foto_path = 'sem_foto.PNG')";
+            }
+        }
+        if (!empty($mes_aniversario) && is_numeric($mes_aniversario) && $mes_aniversario >= 1 && $mes_aniversario <= 12) {
+            $sql .= " AND MONTH(dt_nascimento) = :mes_aniversario";
+            $params[':mes_aniversario'] = (int)$mes_aniversario;
+        }
     } 
     else if ($tipo === 'cnh') {
         $filtro = $_GET['filtro_cnh'] ?? 'TODAS';

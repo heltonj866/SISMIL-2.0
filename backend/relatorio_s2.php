@@ -1,12 +1,14 @@
 <?php
 // ARQUIVO: backend/relatorio_s2.php
 session_start();
-require 'db_connect.php';
 
 // Controle de Acesso: Apenas S2 e Administradores devem gerar este relatório
-$role = $_SESSION['sismil_role'] ?? '';
-// Nota: Se você valida o nível de acesso por sessão no PHP, pode descomentar a linha abaixo:
-// if (!in_array(strtolower(trim($_SESSION['usuario_role'])), ['admin', 's2'])) { die("Acesso negado."); }
+if (!isset($_SESSION['usuario_role']) || !in_array(strtolower(trim($_SESSION['usuario_role'])), ['admin', 's2'])) {
+    header('HTTP/1.1 403 Forbidden');
+    die("Acesso negado. Apenas S2 e Administradores podem gerar este relatório.");
+}
+
+require 'db_connect.php';
 
 try {
     // Busca todos os veículos e faz o JOIN com a tabela de militares para trazer os donos

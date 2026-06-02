@@ -6,6 +6,13 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 header('Pragma: no-cache');
 header('Expires: 0');
 
+session_start();
+if (!isset($_SESSION['usuario_role'])) {
+    header('HTTP/1.1 403 Forbidden');
+    echo json_encode(['status' => 'erro', 'msg' => 'Acesso negado. Por favor, faça login.']);
+    exit;
+}
+
 require 'db_connect.php';
 
 $id = $_GET['id'] ?? '';

@@ -1,6 +1,14 @@
 <?php
 header("Access-Control-Allow-Origin: *");
 header('Content-Type: application/json; charset=utf-8');
+
+session_start();
+if (!isset($_SESSION['usuario_role'])) {
+    header('HTTP/1.1 403 Forbidden');
+    echo json_encode(['status' => 'erro', 'msg' => 'Acesso negado. Por favor, faça login.']);
+    exit;
+}
+
 require 'db_connect.php';
 
 try {

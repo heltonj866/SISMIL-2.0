@@ -4,6 +4,14 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 header('Content-Type: application/json; charset=utf-8');
+
+session_start();
+if (!isset($_SESSION['usuario_role'])) {
+    header('HTTP/1.1 403 Forbidden');
+    echo json_encode(['status' => 'erro', 'msg' => 'Acesso negado. Por favor, faça login.']);
+    exit;
+}
+
 require 'db_connect.php';
 
 $tipo_busca = $_GET['tipo_busca'] ?? 'geral';
@@ -11,6 +19,8 @@ $termo = $_GET['termo'] ?? '';
 $posto = $_GET['posto'] ?? '';
 $qmg = $_GET['qmg'] ?? '';
 $filtro_cnh = $_GET['filtro_cnh'] ?? 'TODAS';
+$sem_foto = isset($_GET['sem_foto']) && $_GET['sem_foto'] == '1';
+$mes_aniversario = $_GET['mes_aniversario'] ?? '';
 
 // Verifica se a S1 pediu para exibir os militares desligados
 $inativos = isset($_GET['inativos']) && $_GET['inativos'] == '1';
@@ -45,6 +55,20 @@ try {
         if (!empty($subunidade) && $subunidade !== 'Todas') {
             $sql .= " AND subunidade = ?";
             $params[] = $subunidade;
+        }
+
+        // Novo filtro: Sem Foto (apenas admin e sargenteacao)
+        if ($sem_foto) {
+            $role_sessao = strtolower(trim($_SESSION['usuario_role'] ?? ''));
+            if (in_array($role_sessao, ['admin', 'sargenteacao'])) {
+                $sql .= " AND (foto_path IS NULL OR foto_path = '' OR foto_path = 'sem_foto.png' OR foto_path = 'sem_foto.PNG')";
+            }
+        }
+
+        // Novo filtro: Aniversariantes do Mês
+        if (!empty($mes_aniversario) && is_numeric($mes_aniversario) && $mes_aniversario >= 1 && $mes_aniversario <= 12) {
+            $sql .= " AND MONTH(dt_nascimento) = ?";
+            $params[] = (int)$mes_aniversario;
         }
     } 
     // --- BUSCA CNH / FROTAS ---

@@ -1,6 +1,11 @@
 <?php
 // ARQUIVO: backend/dossier_militar.php
 session_start();
+if (!isset($_SESSION['usuario_role'])) {
+    header('HTTP/1.1 403 Forbidden');
+    die("Acesso negado. Por favor, faça login.");
+}
+
 require 'db_connect.php';
 
 $id = $_GET['id'] ?? null;
