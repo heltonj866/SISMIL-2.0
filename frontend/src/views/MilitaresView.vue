@@ -14,70 +14,74 @@
     <div v-if="!showForm">
       <!-- Painel de Busca -->
       <div class="search-panel glass-panel mb-4">
-        <form @submit.prevent="handleSearch" class="search-form">
-          <div class="input-group">
-            <label>Nome / Guerra</label>
-            <input type="text" v-model="filters.termo" class="input-modern" placeholder="Digite para buscar...">
-          </div>
-          <div class="input-group">
-            <label>Posto/Grad</label>
-            <select v-model="filters.posto" class="input-modern">
-              <option value="">Todos</option>
-              <option v-for="p in postos" :key="p" :value="p">{{ p }}</option>
-            </select>
-          </div>
-          <div class="input-group">
-            <label>Subunidade</label>
-            <select v-model="filters.subunidade" class="input-modern">
-              <option value="">Todas</option>
-              <option value="Cmdo">Cmdo</option>
-              <option value="EM">EM</option>
-              <option value="PMGu">PMGu</option>
-              <option value="Cia E Eqp Mnt">Cia E Eqp Mnt</option>
-              <option value="1ª Cia E Cnst">1ª Cia E Cnst</option>
-              <option value="Cia C Ap">Cia C Ap</option>
-              <option value="2ª Cia E Cnst">2ª Cia E Cnst</option>
-              <option value="NPOR">NPOR</option>
-            </select>
-          </div>
-          <div class="input-group">
-            <label>Mês Aniversário</label>
-            <select v-model="filters.mes_aniversario" class="input-modern">
-              <option value="">Todos</option>
-              <option value="1">Janeiro</option>
-              <option value="2">Fevereiro</option>
-              <option value="3">Março</option>
-              <option value="4">Abril</option>
-              <option value="5">Maio</option>
-              <option value="6">Junho</option>
-              <option value="7">Julho</option>
-              <option value="8">Agosto</option>
-              <option value="9">Setembro</option>
-              <option value="10">Outubro</option>
-              <option value="11">Novembro</option>
-              <option value="12">Dezembro</option>
-            </select>
-          </div>
-          <!-- Mostrar inativos: somente admin e sargenteacao -->
-          <div class="input-group" v-if="canEdit">
-            <label>&nbsp;</label>
-            <div class="checkbox-wrap">
-              <input type="checkbox" v-model="filters.inativos" id="chkInativos">
-              <label for="chkInativos">Exibir Desligados</label>
+        <form @submit.prevent="handleSearch" class="search-form-container">
+          <!-- Grade de inputs superiores -->
+          <div class="search-inputs-grid">
+            <div class="input-group">
+              <label>Nome / Guerra</label>
+              <input type="text" v-model="filters.termo" class="input-modern" placeholder="Digite para buscar...">
+            </div>
+            <div class="input-group">
+              <label>Posto/Grad</label>
+              <select v-model="filters.posto" class="input-modern">
+                <option value="">Todos</option>
+                <option v-for="p in postos" :key="p" :value="p">{{ p }}</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label>Subunidade</label>
+              <select v-model="filters.subunidade" class="input-modern">
+                <option value="">Todas</option>
+                <option value="Cmdo">Cmdo</option>
+                <option value="EM">EM</option>
+                <option value="PMGu">PMGu</option>
+                <option value="Cia E Eqp Mnt">Cia E Eqp Mnt</option>
+                <option value="1ª Cia E Cnst">1ª Cia E Cnst</option>
+                <option value="Cia C Ap">Cia C Ap</option>
+                <option value="2ª Cia E Cnst">2ª Cia E Cnst</option>
+                <option value="NPOR">NPOR</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label>Mês Aniversário</label>
+              <select v-model="filters.mes_aniversario" class="input-modern">
+                <option value="">Todos</option>
+                <option value="1">Janeiro</option>
+                <option value="2">Fevereiro</option>
+                <option value="3">Março</option>
+                <option value="4">Abril</option>
+                <option value="5">Maio</option>
+                <option value="6">Junho</option>
+                <option value="7">Julho</option>
+                <option value="8">Agosto</option>
+                <option value="9">Setembro</option>
+                <option value="10">Outubro</option>
+                <option value="11">Novembro</option>
+                <option value="12">Dezembro</option>
+              </select>
             </div>
           </div>
-          <!-- Mostrar sem foto: somente admin e sargenteacao -->
-          <div class="input-group" v-if="canEdit">
-            <label>&nbsp;</label>
-            <div class="checkbox-wrap">
-              <input type="checkbox" v-model="filters.sem_foto" id="chkSemFoto">
-              <label for="chkSemFoto">Exibir Sem Foto</label>
+
+          <!-- Barra inferior de ações e checkboxes -->
+          <div class="search-actions-bar">
+            <div class="search-checkboxes">
+              <!-- Mostrar inativos: somente admin e sargenteacao -->
+              <div class="checkbox-wrap" v-if="canEdit">
+                <input type="checkbox" v-model="filters.inativos" id="chkInativos">
+                <label for="chkInativos">Exibir Desligados</label>
+              </div>
+              <!-- Mostrar sem foto: somente admin e sargenteacao -->
+              <div class="checkbox-wrap" v-if="canEdit">
+                <input type="checkbox" v-model="filters.sem_foto" id="chkSemFoto">
+                <label for="chkSemFoto">Exibir Sem Foto</label>
+              </div>
             </div>
-          </div>
-          <div class="input-group" style="align-self: flex-end;">
-            <button type="submit" class="btn-modern btn-primary w-100" :disabled="loading">
-              <i class="fas fa-search"></i> {{ loading ? 'Buscando...' : 'Buscar' }}
-            </button>
+
+            <div class="search-button-wrap">
+              <button type="submit" class="btn-modern btn-primary" :disabled="loading" style="min-width: 150px;">
+                <i class="fas fa-search"></i> {{ loading ? 'Buscando...' : 'Buscar' }}
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -233,12 +237,26 @@ const handleExportar = () => {
 .mb-4 { margin-bottom: 1.5rem; }
 .mb-3 { margin-bottom: 1rem; }
 
-.search-panel { padding: 1.5rem; background: white; border-radius: var(--radius-lg); }
-.search-form { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 1rem; align-items: flex-start; }
+.search-panel { padding: 1.5rem; background: white; border-radius: var(--radius-lg); box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); }
+.search-form-container { display: flex; flex-direction: column; gap: 1.25rem; }
+.search-inputs-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 1.25rem; }
+.search-actions-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-top: 1px solid #f1f5f9; padding-top: 1.25rem; }
+.search-checkboxes { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
 .input-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.4rem; }
-.checkbox-wrap { display: flex; align-items: center; gap: 0.5rem; padding-top: 0.5rem; }
-.checkbox-wrap label { margin-bottom: 0; font-size: 0.85rem; color: var(--text-main); cursor: pointer; }
+.checkbox-wrap { display: flex; align-items: center; gap: 0.5rem; }
+.checkbox-wrap label { margin-bottom: 0; font-size: 0.85rem; color: var(--text-main); cursor: pointer; font-weight: 600; }
 .w-100 { width: 100%; }
+
+@media (max-width: 992px) {
+  .search-inputs-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 768px) {
+  .search-inputs-grid { grid-template-columns: 1fr; }
+  .search-actions-bar { flex-direction: column; align-items: stretch; }
+  .search-checkboxes { justify-content: flex-start; }
+  .search-button-wrap button { width: 100%; }
+}
 
 .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
 .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; }
