@@ -88,7 +88,6 @@
                 <option value="user">Usuário Comum (Consulta)</option>
                 <option value="sargenteacao">Sargenteação / S1</option>
                 <option value="s2">Inteligência / S2</option>
-                <option value="transporte">Transporte</option>
                 <option value="enc_mat">Encarregado de Material (Rancho)</option>
                 <option value="admin">Administrador</option>
               </select>
@@ -160,11 +159,11 @@ const editId = ref(null)
 const form = ref({ identidade: '', senha: '', role: 'user', ativo: '1', subunidade: '', nome: '', posto_grad: '' })
 
 const roleLabel = (r) => {
-  const map = { admin: 'Administrador', sargenteacao: 'Sargenteação', s2: 'S2 / Inteligência', transporte: 'Transporte', enc_mat: 'Enc. Material', user: 'Usuário' }
+  const map = { admin: 'Administrador', sargenteacao: 'Sargenteação', s2: 'S2 / Inteligência', enc_mat: 'Enc. Material', user: 'Usuário' }
   return map[r] || r
 }
 const roleIcon = (r) => {
-  const map = { admin: 'fas fa-shield-alt', sargenteacao: 'fas fa-star', s2: 'fas fa-car', transporte: 'fas fa-truck', user: 'fas fa-user' }
+  const map = { admin: 'fas fa-shield-alt', sargenteacao: 'fas fa-star', s2: 'fas fa-car', enc_mat: 'fas fa-utensils', user: 'fas fa-user' }
   return map[r] || 'fas fa-user'
 }
 

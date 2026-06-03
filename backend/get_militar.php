@@ -36,6 +36,16 @@ try {
         foreach ($dados as $key => $value) {
             if (is_null($value)) $dados[$key] = "";
         }
+        
+        // Remove campos sensíveis para usuários comuns
+        if (isset($_SESSION['usuario_role']) && $_SESSION['usuario_role'] === 'user') {
+            unset($dados['cpf']);
+            unset($dados['nome_pai']);
+            unset($dados['nome_mae']);
+            unset($dados['celular_sec']);
+            unset($dados['tel_emergencia']);
+        }
+        
         echo json_encode(['status' => 'sucesso', 'dados' => $dados]);
     } else {
         echo json_encode(['status' => 'erro', 'msg' => 'Militar não encontrado no banco.']);

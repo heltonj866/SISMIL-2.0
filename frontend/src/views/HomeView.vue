@@ -162,7 +162,7 @@
             <div class="pendente-info">
               <div class="pendente-mil">{{ v.posto_grad }} {{ v.nome_guerra }}</div>
               <div class="pendente-mod">{{ v.modelo }} · {{ v.cor }}</div>
-              <div class="pendente-obs" v-if="v.observacao_s2">
+              <div class="pendente-obs" v-if="v.observacao_s2 && canEdit">
                 <i class="fas fa-comment-dots"></i> {{ v.observacao_s2 }}
               </div>
             </div>
@@ -212,15 +212,15 @@ const isS2    = computed(() => authStore.isS2)
 const role    = computed(() => authStore.userRole)
 
 const roleLabel = computed(() => {
-  const map = { admin: 'Administrador', sargenteacao: 'Sargenteação', s2: 'S2 / Transporte', transporte: 'S2 / Transporte', user: 'Usuário' }
+  const map = { admin: 'Administrador', sargenteacao: 'Sargenteação', s2: 'S2 / Inteligência', user: 'Usuário' }
   return map[role.value] || role.value || 'Usuário'
 })
 const roleChipClass = computed(() => {
-  const map = { admin: 'chip-red', sargenteacao: 'chip-blue', s2: 'chip-green', transporte: 'chip-green', user: 'chip-gray' }
+  const map = { admin: 'chip-red', sargenteacao: 'chip-blue', s2: 'chip-green', user: 'chip-gray' }
   return map[role.value] || 'chip-gray'
 })
 const roleIcon = computed(() => {
-  const map = { admin: 'fas fa-shield-alt', sargenteacao: 'fas fa-star', s2: 'fas fa-car', transporte: 'fas fa-truck', user: 'fas fa-user' }
+  const map = { admin: 'fas fa-shield-alt', sargenteacao: 'fas fa-star', s2: 'fas fa-car', user: 'fas fa-user' }
   return map[role.value] || 'fas fa-user'
 })
 

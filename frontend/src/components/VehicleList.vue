@@ -46,7 +46,7 @@
               <span class="badge" :class="v.homologado == 1 ? 'badge-success' : 'badge-warning'">
                 {{ v.homologado == 1 ? 'HOMOLOGADO' : 'PENDENTE S2' }}
               </span>
-              <div class="text-danger small fw-bold mt-1" v-if="v.observacao_s2" style="line-height:1.1; font-size: 0.75rem;">
+              <div class="text-danger small fw-bold mt-1" v-if="v.observacao_s2 && canEdit" style="line-height:1.1; font-size: 0.75rem;">
                 <i class="fas fa-exclamation-triangle"></i> {{ v.observacao_s2 }}
               </div>
             </td>

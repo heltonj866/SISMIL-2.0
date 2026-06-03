@@ -29,12 +29,6 @@
             <i class="fas fa-search"></i> Inspecionar
           </button>
         </template>
-        <!-- user comum -->
-        <template v-else>
-          <button class="btn-card btn-info" @click="$emit('verFicha', militar)">
-            <i class="fas fa-eye"></i> Ver Ficha
-          </button>
-        </template>
         <!-- Botão Resumo para todos -->
         <button class="btn-card btn-outline" @click="$emit('resumo', militar)">
           <i class="fas fa-id-card"></i> Resumo

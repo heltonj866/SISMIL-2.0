@@ -78,9 +78,6 @@
             </div>
             <div class="veiculo-nome">{{ v.marca ? v.marca + ' / ' : '' }}{{ v.modelo }}</div>
             <div class="text-muted small">Cor: {{ v.cor }} | CRLV: {{ fmt(v.validade_crlv) }}</div>
-            <div class="text-danger small fw-bold mt-1" v-if="v.observacao_s2">
-              <i class="fas fa-exclamation-triangle"></i> S2: {{ v.observacao_s2 }}
-            </div>
           </div>
         </div>
         <p class="text-muted small" v-else>Nenhum veículo cadastrado.</p>
