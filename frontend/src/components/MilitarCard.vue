@@ -74,12 +74,12 @@ const onImgError = (e) => { e.target.src = '/sismil/assets/sem_foto.png' }
 .card-inativo { opacity: 0.8; }
 
 .card-photo {
-  height: 200px;
+  height: 300px;
   overflow: hidden;
   background: #e9ecef;
   position: relative;
 }
-.card-photo img { width: 100%; height: 100%; object-fit: cover; }
+.card-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center 15%; }
 .badge-desligado {
   position: absolute;
   bottom: 8px;
