@@ -260,5 +260,17 @@ const handleSearch = async () => {
   .card-content { flex-direction: column; }
   .foto-area { align-self: center; }
   .veiculo-area { width: 100%; }
+  
+  .top-bar .container {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  .brand {
+    justify-content: center;
+  }
+  .btn-back {
+    text-align: center;
+  }
 }
 </style>

@@ -100,3 +100,11 @@ body {
 .fade-leave-to {
   opacity: 0;
 }
+
+/* Responsividade de Tabelas */
+.table-responsive {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}

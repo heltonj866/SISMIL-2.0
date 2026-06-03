@@ -3,9 +3,9 @@
 header('Content-Type: application/json; charset=utf-8');
 session_start();
 
-if (!isset($_SESSION['usuario_role']) || !in_array(strtolower($_SESSION['usuario_role']), ['admin', 's2'])) {
+if (!isset($_SESSION['usuario_role']) || strtolower($_SESSION['usuario_role']) !== 's2') {
     header('HTTP/1.1 403 Forbidden');
-    echo json_encode(['status' => 'erro', 'msg' => 'Acesso negado.']);
+    echo json_encode(['status' => 'erro', 'msg' => 'Acesso negado. Apenas o perfil S2 pode homologar veículos.']);
     exit;
 }
 

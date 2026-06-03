@@ -176,4 +176,13 @@ const goToArranchamento = () => {
   font-weight: 500;
   text-align: center;
 }
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: 1rem;
+  }
+  .login-card {
+    padding: 1.5rem 1rem;
+  }
+}
 </style>
