@@ -5,9 +5,9 @@ require 'db_connect.php';
 session_start();
 
 // 1. SEGURANÇA ATUALIZADA
-// Verifica se é admin OU sargenteacao
+// Verifica se é admin
 $role = $_SESSION['usuario_role'] ?? '';
-$permitidos = ['admin', 'sargenteacao'];
+$permitidos = ['admin'];
 
 if (!in_array($role, $permitidos)) {
     echo json_encode(['status' => 'erro', 'msg' => 'Acesso negado. Permissão insuficiente.']);
