@@ -212,7 +212,7 @@ const handleSubmit = async () => {
 .input-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: #475569; }
 
 /* Week Selector */
-.week-selector { background: #f1f5f9; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: center; }
+.week-selector { background: #f1f5f9; padding: 1rem; border-radius: 8px; margin-top: 1.5rem; margin-bottom: 2rem; text-align: center; }
 .week-selector label { font-weight: 700; color: var(--primary-blue); display: block; margin-bottom: 0.75rem; }
 .week-options { display: flex; justify-content: center; gap: 1.5rem; }
 .week-radio { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600; color: #334155; }
