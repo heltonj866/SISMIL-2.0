@@ -19,6 +19,7 @@
               <option value="2CIA">2ª Cia Eng Cnst</option>
               <option value="CIA_EQP">Cia Eqp E Mnt</option>
               <option value="PMGU">PMGU</option>
+              <option value="PTTC">PTTC (Prestador de Tarefa)</option>
             </select>
           </div>
           <div class="input-group">

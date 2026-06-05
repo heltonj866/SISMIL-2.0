@@ -53,6 +53,7 @@
                 <option value="Cia C Ap">Cia C Ap</option>
                 <option value="2ª Cia E Cnst">2ª Cia E Cnst</option>
                 <option value="NPOR">NPOR</option>
+                <option value="PTTC">PTTC</option>
               </select>
             </div>
             <div class="input-group">
