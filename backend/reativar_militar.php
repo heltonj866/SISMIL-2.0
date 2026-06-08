@@ -1,14 +1,10 @@
 <?php
 // ARQUIVO: backend/reativar_militar.php
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/security.php';
 session_start();
-
-if (!isset($_SESSION['usuario_role']) || !in_array(strtolower($_SESSION['usuario_role']), ['admin', 'sargenteacao'])) {
-    header('HTTP/1.1 403 Forbidden');
-    echo json_encode(['status' => 'erro', 'msg' => 'Acesso negado.']);
-    exit;
-}
-
+require_login(['admin', 'sargenteacao']);
+validate_csrf();
 require 'db_connect.php';
 
 $data = json_decode(file_get_contents('php://input'), true);
@@ -27,6 +23,6 @@ try {
 
     echo json_encode(['status' => 'sucesso', 'msg' => 'Militar reativado e integrado ao Efetivo Pronto.']);
 } catch (PDOException $e) {
-    echo json_encode(['status' => 'erro', 'msg' => 'Erro no banco: ' . $e->getMessage()]);
+    send_error('Erro ao reativar militar.', 'reativar_militar.php: ' . $e->getMessage());
 }
 ?>

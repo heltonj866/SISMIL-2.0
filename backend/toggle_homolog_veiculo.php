@@ -1,14 +1,11 @@
 <?php
 // ARQUIVO: backend/toggle_homolog_veiculo.php
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/security.php';
 session_start();
-
-if (!isset($_SESSION['usuario_role']) || strtolower($_SESSION['usuario_role']) !== 's2') {
-    header('HTTP/1.1 403 Forbidden');
-    echo json_encode(['status' => 'erro', 'msg' => 'Acesso negado. Apenas o perfil S2 pode homologar veículos.']);
-    exit;
-}
-
+apply_cors();
+require_login(['admin', 's2']); // Apenas admin ou s2
+validate_csrf();
 require 'db_connect.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
@@ -29,6 +26,6 @@ try {
     
     echo json_encode(['status' => 'sucesso']);
 } catch (PDOException $e) {
-    echo json_encode(['status' => 'erro', 'msg' => $e->getMessage()]);
+    send_error("Erro ao alterar homologação do veículo.", $e->getMessage());
 }
 ?>

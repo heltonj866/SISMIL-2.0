@@ -1,6 +1,16 @@
 <?php
+// ARQUIVO: backend/save_arranchamento.php
+require_once __DIR__ . '/security.php';
 header('Content-Type: application/json; charset=utf-8');
+apply_cors();
 require 'db_connect.php';
+
+// MED-02: Rate limiting para o arranchamento público
+// Máximo 20 envios por IP a cada hora
+$rate_id = 'arranchamento_' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+if (!check_rate_limit($rate_id, 20, 3600)) {
+    send_error('Muitas solicitações. Tente novamente em 1 hora.');
+}
 
 $input = json_decode(file_get_contents('php://input'), true);
 
@@ -49,6 +59,6 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    echo json_encode(['status' => 'erro', 'msg' => $e->getMessage()]);
+    send_error('Erro ao salvar arranchamento. Tente novamente.', 'save_arranchamento.php: ' . $e->getMessage());
 }
 ?>

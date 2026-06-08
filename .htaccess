@@ -1,7 +1,7 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /sismil/
-  
+
   # Ignora a pasta backend para que as APIs continuem funcionando
   RewriteCond %{REQUEST_URI} ^/sismil/backend/ [NC]
   RewriteRule ^ - [L]
@@ -12,3 +12,26 @@
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule . /sismil/index.html [L]
 </IfModule>
+
+# LOW-01: Headers de segurança HTTP
+<IfModule mod_headers.c>
+  # Impede que o site seja carregado em iframes de outros domínios (clickjacking)
+  Header always set X-Frame-Options "SAMEORIGIN"
+
+  # Impede que o browser "adivinhe" o tipo de conteúdo (MIME sniffing)
+  Header always set X-Content-Type-Options "nosniff"
+
+  # Controla informações de referer enviadas em requisições
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # Proteção XSS para browsers legados
+  Header always set X-XSS-Protection "1; mode=block"
+
+  # Política de segurança de conteúdo
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'"
+
+  # Remove cabeçalho que revela a versão do servidor
+  Header always unset X-Powered-By
+  Header always unset Server
+</IfModule>
+

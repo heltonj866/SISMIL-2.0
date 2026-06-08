@@ -1,13 +1,10 @@
 <?php
+// ARQUIVO: backend/save_militar.php
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/security.php';
 session_start();
-
-if (!isset($_SESSION['usuario_role']) || !in_array(strtolower($_SESSION['usuario_role']), ['admin', 'sargenteacao'])) {
-    header('HTTP/1.1 403 Forbidden');
-    echo json_encode(['status' => 'erro', 'msg' => 'Acesso negado.']);
-    exit;
-}
-
+require_login(['admin', 'sargenteacao']);
+validate_csrf();
 require 'db_connect.php';
 
 try {
@@ -16,50 +13,58 @@ try {
         return ($val === '' || $val === 'null') ? null : trim($val);
     }
 
+    // --- HIGH-02: Função para validar upload de arquivo com MIME real ---
+    function validar_upload($file_key, $extensoes_permitidas, $mimes_permitidos, $dir, $prefixo) {
+        if (!isset($_FILES[$file_key]) || $_FILES[$file_key]['error'] !== UPLOAD_ERR_OK) {
+            return null;
+        }
+        $file = $_FILES[$file_key];
+        $ext  = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+        // Valida extensão
+        if (!in_array($ext, $extensoes_permitidas)) {
+            throw new Exception("Tipo de arquivo inválido para '$file_key'. Permitido: " . implode(', ', $extensoes_permitidas));
+        }
+
+        // Valida MIME real do conteúdo do arquivo
+        $mime_real = mime_content_type($file['tmp_name']);
+        if (!in_array($mime_real, $mimes_permitidos)) {
+            throw new Exception("Conteúdo de arquivo inválido para '$file_key'. MIME detectado: $mime_real");
+        }
+
+        if (!is_dir($dir)) mkdir($dir, 0755, true);
+
+        // Nome seguro com extensão controlada (nunca usa a extensão original)
+        $ext_segura = ($ext === 'pdf') ? 'pdf' : 'jpg';
+        $novo_nome  = $prefixo . bin2hex(random_bytes(8)) . '.' . $ext_segura;
+
+        if (!move_uploaded_file($file['tmp_name'], $dir . $novo_nome)) {
+            throw new Exception("Falha ao mover arquivo '$file_key'.");
+        }
+        return $novo_nome;
+    }
+
     $id  = getPost('id_militar') ?? getPost('militarId');
     $cpf = getPost('cpf');
-
     if (!$cpf) throw new Exception("O CPF é obrigatório.");
 
-    // Upload de Foto
-    $foto_path = null; $sqlFoto = "";
-    if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
-        $dir = __DIR__ . '/../uploads/';
-        if (!is_dir($dir)) mkdir($dir, 0777, true);
-        $ext = strtolower(pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION));
-        $novo_nome = uniqid('foto_') . '.' . $ext;
-        if (move_uploaded_file($_FILES['foto']['tmp_name'], $dir . $novo_nome)) {
-            $foto_path = $novo_nome; $sqlFoto = ", foto_path = :foto";
-        }
-    }
+    $dir_uploads = __DIR__ . '/../uploads/';
+    $dir_docs    = __DIR__ . '/../uploads/documentos/';
 
-    // Upload de CNH (pdf_habilitacao)
-    $pdf_cnh = null; $sqlCnh = "";
-    if (isset($_FILES['pdf_habilitacao']) && $_FILES['pdf_habilitacao']['error'] === UPLOAD_ERR_OK) {
-        $dir = __DIR__ . '/../uploads/documentos/';
-        if (!is_dir($dir)) mkdir($dir, 0777, true);
-        $ext = strtolower(pathinfo($_FILES['pdf_habilitacao']['name'], PATHINFO_EXTENSION));
-        if ($ext === 'pdf') {
-            $novo_nome_cnh = uniqid('cnh_') . '.pdf';
-            if (move_uploaded_file($_FILES['pdf_habilitacao']['tmp_name'], $dir . $novo_nome_cnh)) {
-                $pdf_cnh = $novo_nome_cnh; $sqlCnh = ", pdf_habilitacao = :pdf_cnh";
-            }
-        }
-    }
+    // Upload de Foto — HIGH-02: valida MIME real (somente imagens)
+    $foto_path = validar_upload('foto', ['jpg','jpeg','png','webp'],
+        ['image/jpeg','image/png','image/webp'], $dir_uploads, 'foto_');
+    $sqlFoto = $foto_path ? ", foto_path = :foto" : "";
 
-    // Upload de Nada Consta
-    $pdf_nada_consta = null; $sqlPdf = "";
-    if (isset($_FILES['pdf_nada_consta']) && $_FILES['pdf_nada_consta']['error'] === UPLOAD_ERR_OK) {
-        $dir = __DIR__ . '/../uploads/documentos/';
-        if (!is_dir($dir)) mkdir($dir, 0777, true);
-        $ext = strtolower(pathinfo($_FILES['pdf_nada_consta']['name'], PATHINFO_EXTENSION));
-        if ($ext === 'pdf') {
-            $novo_nome_pdf = uniqid('nc_') . '.pdf';
-            if (move_uploaded_file($_FILES['pdf_nada_consta']['tmp_name'], $dir . $novo_nome_pdf)) {
-                $pdf_nada_consta = $novo_nome_pdf; $sqlPdf = ", pdf_nada_consta = :pdf_nada_consta";
-            }
-        }
-    }
+    // Upload de CNH — apenas PDF
+    $pdf_cnh = validar_upload('pdf_habilitacao', ['pdf'],
+        ['application/pdf'], $dir_docs, 'cnh_');
+    $sqlCnh = $pdf_cnh ? ", pdf_habilitacao = :pdf_cnh" : "";
+
+    // Upload de Nada Consta — apenas PDF
+    $pdf_nada_consta = validar_upload('pdf_nada_consta', ['pdf'],
+        ['application/pdf'], $dir_docs, 'nc_');
+    $sqlPdf = $pdf_nada_consta ? ", pdf_nada_consta = :pdf_nada_consta" : "";
 
     $dados = [
         ':cpf'            => $cpf,
@@ -95,9 +100,9 @@ try {
 
     if ($id) {
         $dados[':id'] = $id;
-        if ($foto_path) $dados[':foto'] = $foto_path;
+        if ($foto_path)       $dados[':foto']           = $foto_path;
         if ($pdf_nada_consta) $dados[':pdf_nada_consta'] = $pdf_nada_consta;
-        if ($pdf_cnh) $dados[':pdf_cnh'] = $pdf_cnh;
+        if ($pdf_cnh)         $dados[':pdf_cnh']         = $pdf_cnh;
 
         $sql = "UPDATE tb_militares SET
             cpf=:cpf, posto_grad=:posto_grad, numero=:numero, nome_guerra=:nome_guerra,
@@ -111,9 +116,9 @@ try {
             $sqlFoto $sqlPdf $sqlCnh
             WHERE id=:id";
     } else {
-        $dados[':foto'] = $foto_path;
+        $dados[':foto']           = $foto_path;
         $dados[':pdf_nada_consta'] = $pdf_nada_consta;
-        $dados[':pdf_cnh'] = $pdf_cnh;
+        $dados[':pdf_cnh']         = $pdf_cnh;
 
         $sql = "INSERT INTO tb_militares (
             cpf, posto_grad, numero, nome_guerra, subunidade, pelotao, secao, nome_completo,
@@ -132,7 +137,8 @@ try {
 
     $pdo->prepare($sql)->execute($dados);
     echo json_encode(['status' => 'sucesso', 'msg' => 'Salvo com sucesso!']);
+
 } catch (Exception $e) {
-    echo json_encode(['status' => 'erro', 'msg' => $e->getMessage()]);
+    send_error($e->getMessage(), 'save_militar.php: ' . $e->getMessage());
 }
 ?>

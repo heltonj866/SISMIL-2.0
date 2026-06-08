@@ -1,13 +1,8 @@
 <?php
 // ARQUIVO: backend/relatorio_s2.php
+require_once __DIR__ . '/security.php';
 session_start();
-
-// Controle de Acesso: Apenas S2 e Administradores devem gerar este relatório
-if (!isset($_SESSION['usuario_role']) || !in_array(strtolower(trim($_SESSION['usuario_role'])), ['admin', 's2'])) {
-    header('HTTP/1.1 403 Forbidden');
-    die("Acesso negado. Apenas S2 e Administradores podem gerar este relatório.");
-}
-
+require_login(['admin', 's2']);
 require 'db_connect.php';
 
 try {
@@ -21,7 +16,8 @@ try {
     $stmt->execute();
     $veiculos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    die("Erro ao gerar relatório: " . $e->getMessage());
+    error_log('[SISMIL] relatorio_s2.php: ' . $e->getMessage());
+    die("Erro ao gerar relatório. Contate o administrador.");
 }
 
 $data_atual = date('d/m/Y H:i');
@@ -158,14 +154,14 @@ $data_atual = date('d/m/Y H:i');
                         $veiculo_detalhes = strtoupper(($v['marca'] ? $v['marca'] . " / " : "") . $v['modelo'] . " (" . $v['cor'] . ")");
                     ?>
                     <tr>
-                        <td style="font-weight: bold;"><?php echo strtoupper($nome_completo); ?></td>
-                        <td><?php echo strtoupper($v['companhia'] ?? '---'); ?></td>
-                        <td><?php echo strtoupper($v['tipo_veiculo']); ?></td>
-                        <td class="placa"><?php echo strtoupper($v['placa']); ?></td>
-                        <td><?php echo $veiculo_detalhes; ?></td>
-                        <td><?php echo $validade; ?></td>
+                        <td style="font-weight: bold;"><?php echo h(strtoupper($nome_completo)); ?></td>
+                        <td><?php echo h(strtoupper($v['companhia'] ?? '---')); ?></td>
+                        <td><?php echo h(strtoupper($v['tipo_veiculo'])); ?></td>
+                        <td class="placa"><?php echo h(strtoupper($v['placa'])); ?></td>
+                        <td><?php echo h($veiculo_detalhes); ?></td>
+                        <td><?php echo h($validade); ?></td>
                         <td style="text-align: center;"><?php echo $status_badge; ?></td>
-                        <td style="color: #666; font-style: italic;"><?php echo $v['observacao_s2'] ? htmlspecialchars($v['observacao_s2']) : '---'; ?></td>
+                        <td style="color: #666; font-style: italic;"><?php echo $v['observacao_s2'] ? h($v['observacao_s2']) : '---'; ?></td>
                     </tr>
                 <?php endforeach; ?>
             <?php else: ?>

@@ -1,8 +1,8 @@
 <?php
+// ARQUIVO: backend/print_arranchamento.php
+require_once __DIR__ . '/security.php';
 session_start();
-if (!isset($_SESSION['usuario_role']) || !in_array($_SESSION['usuario_role'], ['admin', 'enc_mat'])) {
-    die("Acesso negado.");
-}
+require_login(['admin', 'enc_mat']);
 require 'db_connect.php';
 
 $data = $_GET['data'] ?? date('Y-m-d');
@@ -22,27 +22,32 @@ if ($role === 'enc_mat' && !empty($sub)) {
     $params[] = $sub;
 }
 
-// Separar Oficiais/Sargentos e Cabos/Soldados
-$sqlOfSgt = "SELECT * FROM tb_arranchamento 
-             WHERE data_refeicao = ?" . $sqlFilter . " 
-             AND posto_grad IN ('Cel', 'Ten Cel', 'Maj', 'Cap', '1º Ten', '2º Ten', 'Asp', 'Subten', '1º Sgt', '2º Sgt', '3º Sgt')
-             ORDER BY FIELD(posto_grad, 'Cel', 'Ten Cel', 'Maj', 'Cap', '1º Ten', '2º Ten', 'Asp', 'Subten', '1º Sgt', '2º Sgt', '3º Sgt'), nome_guerra ASC";
+try {
+    // Separar Oficiais/Sargentos e Cabos/Soldados
+    $sqlOfSgt = "SELECT * FROM tb_arranchamento 
+                 WHERE data_refeicao = ?" . $sqlFilter . " 
+                 AND posto_grad IN ('Cel', 'Ten Cel', 'Maj', 'Cap', '1º Ten', '2º Ten', 'Asp', 'Subten', '1º Sgt', '2º Sgt', '3º Sgt')
+                 ORDER BY FIELD(posto_grad, 'Cel', 'Ten Cel', 'Maj', 'Cap', '1º Ten', '2º Ten', 'Asp', 'Subten', '1º Sgt', '2º Sgt', '3º Sgt'), nome_guerra ASC";
 
-$sqlCbSd = "SELECT * FROM tb_arranchamento 
-            WHERE data_refeicao = ?" . $sqlFilter . " 
-            AND posto_grad IN ('Cb', 'Sd EP', 'Sd EV', 'SC')
-            ORDER BY FIELD(posto_grad, 'Cb', 'Sd EP', 'Sd EV', 'SC'), CAST(numero AS UNSIGNED) ASC, nome_guerra ASC";
+    $sqlCbSd = "SELECT * FROM tb_arranchamento 
+                WHERE data_refeicao = ?" . $sqlFilter . " 
+                AND posto_grad IN ('Cb', 'Sd EP', 'Sd EV', 'SC')
+                ORDER BY FIELD(posto_grad, 'Cb', 'Sd EP', 'Sd EV', 'SC'), CAST(numero AS UNSIGNED) ASC, nome_guerra ASC";
 
-$stmt1 = $pdo->prepare($sqlOfSgt);
-$stmt1->execute($params);
-$ofSgt = $stmt1->fetchAll(PDO::FETCH_ASSOC);
+    $stmt1 = $pdo->prepare($sqlOfSgt);
+    $stmt1->execute($params);
+    $ofSgt = $stmt1->fetchAll(PDO::FETCH_ASSOC);
 
-$stmt2 = $pdo->prepare($sqlCbSd);
-$stmt2->execute($params);
-$cbSd = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+    $stmt2 = $pdo->prepare($sqlCbSd);
+    $stmt2->execute($params);
+    $cbSd = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    error_log("[SISMIL] Erro ao carregar arranchamento para impressão: " . $e->getMessage());
+    die("Ocorreu um erro interno ao carregar a planilha de arranchamento.");
+}
 
 function renderTable($title, $registros) {
-    echo "<h3 style='margin-top: 30px; border-bottom: 2px solid #000; padding-bottom: 5px;'>{$title}</h3>";
+    echo "<h3 style='margin-top: 30px; border-bottom: 2px solid #000; padding-bottom: 5px;'>" . h($title) . "</h3>";
     echo "<table>";
     echo "<thead><tr><th width='15%'>Subunidade</th><th width='15%'>Posto/Grad</th><th width='10%'>Número</th><th width='30%'>Nome de Guerra</th><th width='15%'>Café</th><th width='15%'>Almoço</th></tr></thead>";
     echo "<tbody>";
@@ -52,14 +57,14 @@ function renderTable($title, $registros) {
         foreach ($registros as $r) {
             $cafe = $r['cafe'] ? 'X' : '';
             $almoco = $r['almoco'] ? 'X' : '';
-            $num = $r['numero'] ?: '---';
+            $num = $r['numero'] ? h($r['numero']) : '---';
             echo "<tr>
-                    <td style='text-align:center;'>{$r['subunidade']}</td>
-                    <td style='text-align:center;'>{$r['posto_grad']}</td>
-                    <td style='text-align:center;'>{$num}</td>
-                    <td>{$r['nome_guerra']}</td>
-                    <td style='text-align:center; font-weight:bold;'>{$cafe}</td>
-                    <td style='text-align:center; font-weight:bold;'>{$almoco}</td>
+                    <td style='text-align:center;'>" . h($r['subunidade']) . "</td>
+                    <td style='text-align:center;'>" . h($r['posto_grad']) . "</td>
+                    <td style='text-align:center;'>" . $num . "</td>
+                    <td>" . h($r['nome_guerra']) . "</td>
+                    <td style='text-align:center; font-weight:bold;'>" . h($cafe) . "</td>
+                    <td style='text-align:center; font-weight:bold;'>" . h($almoco) . "</td>
                   </tr>";
         }
     }
@@ -71,7 +76,7 @@ function renderTable($title, $registros) {
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Arranchamento - <?php echo $dataBr; ?></title>
+    <title>Arranchamento - <?php echo h($dataBr); ?></title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; background: #555; }
         .page { background: white; width: 210mm; min-height: 297mm; margin: 20px auto; padding: 20mm; box-shadow: 0 0 10px rgba(0,0,0,0.5); box-sizing: border-box; position: relative; }
@@ -111,7 +116,7 @@ function renderTable($title, $registros) {
     
     <div class="title-box">
         <h3>RELAÇÃO DE ARRANCHAMENTO</h3>
-        <p style="margin: 5px 0 0 0; font-weight: bold; font-size: 16px;"><?php echo $nomeDia . ' - ' . $dataBr; ?></p>
+        <p style="margin: 5px 0 0 0; font-weight: bold; font-size: 16px;"><?php echo h($nomeDia) . ' - ' . h($dataBr); ?></p>
     </div>
 
     <?php 

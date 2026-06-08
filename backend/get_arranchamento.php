@@ -1,12 +1,11 @@
 <?php
+// ARQUIVO: backend/get_arranchamento.php
 header('Content-Type: application/json; charset=utf-8');
-require 'db_connect.php';
+require_once __DIR__ . '/security.php';
 session_start();
-
-if (!isset($_SESSION['usuario_role']) || !in_array($_SESSION['usuario_role'], ['admin', 'enc_mat'])) {
-    echo json_encode(['status' => 'erro', 'msg' => 'Acesso negado.']);
-    exit;
-}
+apply_cors();
+require_login(['admin', 'enc_mat']);
+require 'db_connect.php';
 
 $data = $_GET['data'] ?? date('Y-m-d');
 $role = $_SESSION['usuario_role'];
@@ -41,6 +40,6 @@ try {
         'registros' => $registros
     ]);
 } catch (Exception $e) {
-    echo json_encode(['status' => 'erro', 'msg' => $e->getMessage()]);
+    send_error("Erro ao carregar dados de arranchamento.", $e->getMessage());
 }
 ?>

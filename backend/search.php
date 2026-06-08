@@ -1,17 +1,10 @@
 <?php
 // ARQUIVO: backend/search.php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
+require_once __DIR__ . '/security.php';
 header('Content-Type: application/json; charset=utf-8');
-
+apply_cors();
 session_start();
-if (!isset($_SESSION['usuario_role'])) {
-    header('HTTP/1.1 403 Forbidden');
-    echo json_encode(['status' => 'erro', 'msg' => 'Acesso negado. Por favor, faça login.']);
-    exit;
-}
-
+require_login(); // 403 automático se não autenticado
 require 'db_connect.php';
 
 $tipo_busca = $_GET['tipo_busca'] ?? 'geral';
@@ -119,6 +112,6 @@ try {
     echo json_encode(['status' => 'sucesso', 'dados' => $resultados]);
 
 } catch (PDOException $e) {
-    echo json_encode(['status' => 'erro', 'msg' => 'Erro SQL: ' . $e->getMessage()]);
+    send_error('Erro ao processar busca. Tente novamente.', 'search.php PDO: ' . $e->getMessage());
 }
 ?>

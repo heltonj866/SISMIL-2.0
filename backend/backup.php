@@ -1,12 +1,9 @@
 <?php
 // ARQUIVO: backend/backup.php
-require 'db_connect.php';
+require_once __DIR__ . '/security.php';
 session_start();
-
-// 1. Segurança: Só Admin pode baixar
-if (!isset($_SESSION['usuario_role']) || $_SESSION['usuario_role'] !== 'admin') {
-    die("Acesso Negado.");
-}
+require_login(['admin']);
+require 'db_connect.php';
 
 // 2. Configura o Download do Arquivo
 $data = date('d-m-Y_H-i');

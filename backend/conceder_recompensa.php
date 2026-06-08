@@ -1,12 +1,12 @@
 <?php
+// ARQUIVO: backend/conceder_recompensa.php
+header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/security.php';
 session_start();
+apply_cors();
+require_login(['admin', 'sargenteacao']);
+validate_csrf();
 require 'db_connect.php';
-header('Content-Type: application/json');
-
-// Adaptação: Verifica 'usuario_role'
-if (!isset($_SESSION['usuario_role']) || !in_array(strtolower($_SESSION['usuario_role']), ['admin', 'sargenteacao'])) {
-    echo json_encode(['status' => 'erro', 'msg' => 'Sem permissão.']); exit;
-}
 
 $input = json_decode(file_get_contents('php://input'), true);
 $id = $input['militar_id'] ?? 0;
@@ -25,6 +25,11 @@ try {
 
     // Consome
     $listaIds = implode(',', $ids);
+    // Para segurança absoluta contra injeção SQL caso $ids venha a ter strings, 
+    // embora fetchAll(PDO::FETCH_COLUMN) de ids (inteiros do banco) seja seguro, 
+    // mapeamos os IDs para garantir que são apenas números inteiros.
+    $ids_limpos = array_map('intval', $ids);
+    $listaIds = implode(',', $ids_limpos);
     $pdo->exec("UPDATE tb_alteracoes SET consumido = 1 WHERE id IN ($listaIds)");
     
     // Gera Dispensa
@@ -34,7 +39,9 @@ try {
     $pdo->commit();
     echo json_encode(['status' => 'sucesso']);
 } catch (Exception $e) {
-    $pdo->rollBack();
-    echo json_encode(['status' => 'erro', 'msg' => $e->getMessage()]);
+    if (isset($pdo) && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    send_error("Erro ao processar a concessão de recompensa.", $e->getMessage());
 }
 ?>

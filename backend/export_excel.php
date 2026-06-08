@@ -1,11 +1,8 @@
 <?php
 // ARQUIVO: backend/export_excel.php
+require_once __DIR__ . '/security.php';
 session_start();
-if (!isset($_SESSION['usuario_role'])) {
-    header('HTTP/1.1 403 Forbidden');
-    die("Acesso negado. Por favor, faça login.");
-}
-
+require_login(); // Qualquer usuário autenticado
 require 'db_connect.php';
 
 $arquivo = 'relatorio_efetivo_' . date('d-m-Y') . '.xls';
@@ -71,7 +68,8 @@ try {
     $lista = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (Exception $e) {
-    echo "Erro: " . $e->getMessage();
+    error_log('[SISMIL] export_excel.php: ' . $e->getMessage());
+    echo "Erro ao gerar relatório.";
     exit;
 }
 ?>
@@ -123,26 +121,26 @@ try {
                 $local = trim(($row['pelotao'] ?? '') . ' ' . ($row['secao'] ?? ''));
             ?>
             <tr>
-                <td><?= $row['posto_grad'] ?? '' ?></td>
-                <td><?= mb_strtoupper($row['nome_guerra'] ?? '') ?></td>
-                <td><?= $row['nome_completo'] ?? '' ?></td>
-                <td class="text-center"><?= $row['numero'] ?? '' ?></td>
-                <td class="text-center"><?= $row['subunidade'] ?? '' ?></td>
-                <td><?= $local ?></td>
-                <td><?= $row['qmg'] ?? '' ?></td>
-                <td class="text-center"><?= $dtPraca ?></td>
-                <td class="text-center" style="mso-number-format:'\@'"><?= $row['identidade'] ?? '' ?></td>
-                <td class="text-center" style="mso-number-format:'\@'"><?= $row['idt_militar'] ?? '' ?></td>
-                <td class="text-center"><?= $row['celular_princ'] ?? '' ?></td>
-                <td><?= $row['endereco'] ?? '' ?></td>
-                <td><?= $row['bairro'] ?? '' ?></td>
-                <td><?= $row['cidade'] ?? '' ?></td>
-                <td class="text-center"><?= $row['cat_cnh'] ?? '' ?></td>
-                <td class="text-center"><?= $dtVal ?></td>
-                <td><?= $row['tipo_veiculo'] ?? '' ?></td>
-                <td><?= $row['modelo'] ?? '' ?></td>
-                <td><?= $row['cor'] ?? '' ?></td>
-                <td class="text-center"><?= mb_strtoupper($row['placa'] ?? '') ?></td>
+                <td><?= h($row['posto_grad']) ?></td>
+                <td><?= h(mb_strtoupper($row['nome_guerra'] ?? '')) ?></td>
+                <td><?= h($row['nome_completo']) ?></td>
+                <td class="text-center"><?= h($row['numero']) ?></td>
+                <td class="text-center"><?= h($row['subunidade']) ?></td>
+                <td><?= h($local) ?></td>
+                <td><?= h($row['qmg']) ?></td>
+                <td class="text-center"><?= h($dtPraca) ?></td>
+                <td class="text-center" style="mso-number-format:'\@'"><?= h($row['identidade']) ?></td>
+                <td class="text-center" style="mso-number-format:'\@'"><?= h($row['idt_militar']) ?></td>
+                <td class="text-center"><?= h($row['celular_princ']) ?></td>
+                <td><?= h($row['endereco']) ?></td>
+                <td><?= h($row['bairro']) ?></td>
+                <td><?= h($row['cidade']) ?></td>
+                <td class="text-center"><?= h($row['cat_cnh']) ?></td>
+                <td class="text-center"><?= h($dtVal) ?></td>
+                <td><?= h($row['tipo_veiculo']) ?></td>
+                <td><?= h($row['modelo']) ?></td>
+                <td><?= h($row['cor']) ?></td>
+                <td class="text-center"><?= h(mb_strtoupper($row['placa'] ?? '')) ?></td>
             </tr>
             <?php endforeach; ?>
         </tbody>

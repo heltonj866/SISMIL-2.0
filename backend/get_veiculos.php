@@ -1,14 +1,10 @@
 <?php
 // ARQUIVO: backend/get_veiculos.php
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/security.php';
 session_start();
-
-if (!isset($_SESSION['usuario_role'])) {
-    header('HTTP/1.1 403 Forbidden');
-    echo json_encode(['status' => 'erro', 'msg' => 'Acesso negado. Por favor, faça login.']);
-    exit;
-}
-
+apply_cors();
+require_login(); // Qualquer usuário autenticado
 require 'db_connect.php';
 
 $militar_id = $_GET['militar_id'] ?? '';
@@ -32,6 +28,6 @@ try {
 
     echo json_encode(['status' => 'sucesso', 'dados' => $veiculos]);
 } catch (Exception $e) {
-    echo json_encode(['status' => 'erro', 'msg' => 'Erro BD: ' . $e->getMessage()]);
+    send_error("Erro ao carregar veículos.", $e->getMessage());
 }
 ?>

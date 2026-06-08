@@ -1,15 +1,25 @@
 <?php
+// ARQUIVO: backend/excluir_veiculo.php
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/security.php';
 session_start();
-
-if (!isset($_SESSION['usuario_role']) || !in_array(strtolower($_SESSION['usuario_role']), ['admin', 'sargenteacao'])) {
-    header('HTTP/1.1 403 Forbidden');
-    echo json_encode(['status' => 'erro', 'msg' => 'Acesso negado.']);
-    exit;
-}
-
+apply_cors();
+require_login(['admin', 'sargenteacao']);
+validate_csrf();
 require 'db_connect.php';
-$data = json_decode(file_get_contents("php://input"), true);
-$pdo->prepare("DELETE FROM tb_veiculos WHERE id = ?")->execute([$data['id']]);
-echo json_encode(['status' => 'sucesso']);
+
+try {
+    $data = json_decode(file_get_contents("php://input"), true);
+    $id = $data['id'] ?? null;
+    if (!$id) {
+        throw new Exception("ID do veículo inválido.");
+    }
+    
+    $stmt = $pdo->prepare("DELETE FROM tb_veiculos WHERE id = ?");
+    $stmt->execute([$id]);
+    
+    echo json_encode(['status' => 'sucesso']);
+} catch (Exception $e) {
+    send_error("Erro ao excluir veículo.", $e->getMessage());
+}
 ?>

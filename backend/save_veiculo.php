@@ -1,13 +1,9 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/security.php';
 session_start();
-
-if (!isset($_SESSION['usuario_role']) || !in_array(strtolower($_SESSION['usuario_role']), ['admin', 'sargenteacao'])) {
-    header('HTTP/1.1 403 Forbidden');
-    echo json_encode(['status' => 'erro', 'msg' => 'Acesso negado.']);
-    exit;
-}
-
+require_login(['admin', 'sargenteacao']);
+validate_csrf();
 require 'db_connect.php';
 
 try {
@@ -17,14 +13,17 @@ try {
 
     if (!$militar_id || !$placa) throw new Exception("Identificação do militar e placa são obrigatórios.");
 
-    // Upload CRLV PDF
+    // Upload CRLV PDF - HIGH-02: valida MIME real
     $pdf_path = null; $sqlPdf = "";
     if (isset($_FILES['v_pdf']) && $_FILES['v_pdf']['error'] === UPLOAD_ERR_OK) {
         $dir = __DIR__ . '/../uploads/documentos/';
-        if (!is_dir($dir)) mkdir($dir, 0777, true);
+        if (!is_dir($dir)) mkdir($dir, 0755, true);
         $ext = strtolower(pathinfo($_FILES['v_pdf']['name'], PATHINFO_EXTENSION));
-        if ($ext !== 'pdf') throw new Exception("O documento deve ser PDF.");
-        $pdf_path = uniqid('crlv_') . '.pdf';
+        $mime_real = mime_content_type($_FILES['v_pdf']['tmp_name']);
+        if ($ext !== 'pdf' || $mime_real !== 'application/pdf') {
+            throw new Exception("O documento deve ser um PDF válido.");
+        }
+        $pdf_path = 'crlv_' . bin2hex(random_bytes(8)) . '.pdf';
         if (move_uploaded_file($_FILES['v_pdf']['tmp_name'], $dir . $pdf_path)) {
             $sqlPdf = ", pdf_veiculo = :pdf";
         } else { $pdf_path = null; }
@@ -59,6 +58,6 @@ try {
     $pdo->prepare($sql)->execute($dados);
     echo json_encode(['status' => 'sucesso']);
 } catch (Exception $e) {
-    echo json_encode(['status' => 'erro', 'msg' => $e->getMessage()]);
+    send_error($e->getMessage(), 'save_veiculo.php: ' . $e->getMessage());
 }
 ?>

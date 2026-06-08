@@ -1,5 +1,11 @@
 <?php
+// ARQUIVO: backend/homologar_veiculo.php
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/security.php';
+session_start();
+apply_cors();
+require_login(['admin', 's2']);
+validate_csrf();
 require 'db_connect.php';
 
 try {
@@ -13,6 +19,6 @@ try {
     
     echo json_encode(['status' => 'sucesso']);
 } catch (Exception $e) { 
-    echo json_encode(['status' => 'erro', 'msg' => $e->getMessage()]); 
+    send_error("Erro ao homologar militar.", $e->getMessage()); 
 }
 ?>

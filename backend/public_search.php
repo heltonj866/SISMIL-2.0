@@ -1,8 +1,7 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
+require_once __DIR__ . '/security.php';
 header('Content-Type: application/json; charset=utf-8');
+apply_cors();
 require 'db_connect.php';
 
 $termo = trim($_GET['termo'] ?? '');
@@ -72,6 +71,6 @@ try {
     }
 
 } catch (Exception $e) {
-    echo json_encode(['status' => 'erro', 'msg' => 'Erro BD: ' . $e->getMessage()]);
+    send_error('Erro ao processar busca.', 'public_search.php: ' . $e->getMessage());
 }
 ?>

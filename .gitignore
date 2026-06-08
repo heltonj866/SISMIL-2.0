@@ -7,3 +7,5 @@
 !/uploads/documentos/.gitkeep
 .DS_Store
 *.log
+# Arquivo de configuração local com credenciais — NUNCA comitar
+/backend/config.php

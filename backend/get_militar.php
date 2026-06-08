@@ -1,18 +1,14 @@
 <?php
 // ARQUIVO: backend/get_militar.php
-// Cabeçalhos para evitar cache do navegador e garantir JSON
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 header('Pragma: no-cache');
 header('Expires: 0');
 
+require_once __DIR__ . '/security.php';
 session_start();
-if (!isset($_SESSION['usuario_role'])) {
-    header('HTTP/1.1 403 Forbidden');
-    echo json_encode(['status' => 'erro', 'msg' => 'Acesso negado. Por favor, faça login.']);
-    exit;
-}
-
+apply_cors();
+require_login(); // Qualquer usuário autenticado
 require 'db_connect.php';
 
 $id = $_GET['id'] ?? '';
@@ -23,7 +19,6 @@ if(empty($id)) {
 }
 
 try {
-    // Busca direta e simples
     $sql = "SELECT * FROM tb_militares WHERE id = ?";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$id]);
@@ -52,6 +47,6 @@ try {
     }
 
 } catch (PDOException $e) {
-    echo json_encode(['status' => 'erro', 'msg' => 'Erro SQL: ' . $e->getMessage()]);
+    send_error("Erro ao buscar dados do militar.", $e->getMessage());
 }
 ?>

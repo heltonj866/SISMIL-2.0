@@ -1,5 +1,8 @@
 <?php
 // ARQUIVO: backend/print_selo.php
+require_once __DIR__ . '/security.php';
+session_start();
+require_login(['admin', 's2']); // Apenas admin ou s2 podem emitir selo
 require 'db_connect.php';
 
 // Recebemos o veiculo_id enviado pelo novo script.js
@@ -42,7 +45,7 @@ try {
     $campo_data = !empty($m['emissao_crlv']) ? $m['emissao_crlv'] : ($m['validade_crlv'] ?? null);
     if (!empty($campo_data)) {
         $nova_data = strtotime('+1 year', strtotime($campo_data));
-        $meses = [1=>'JANEIRO', 2=>'FEVEREIRO', 3=>'MARÇO', 4=>'ABRIL', 5=>'MAIO', 6=>'JUNHO', 7=>'JULHO', 8=>'AGOSTO', 9=>'SETEMBRO', 10=>'OUTUBRO', 11=>'NOVEMBRO', 12=>'DEZEMBRO'];
+        $meses = [1=>'JANEIRO', 2=>'FEVEREIRO', 3=>'MARÇO', 4=>'ABRIL', 5=>'MAIO', 6=>'JUNHO', 7=>'JULHO', 8=>'AGOSTO', 9=>'SETEMBRO', 10=>'OUTUBRO', 11=>'NOVEBRO', 12=>'DEZEMBRO'];
         $dia = date('d', $nova_data);
         $mes = $meses[(int)date('m', $nova_data)];
         $ano = date('Y', $nova_data);
@@ -65,7 +68,8 @@ try {
     $telefone = !empty($m['celular_princ']) ? $m['celular_princ'] : '';
 
 } catch (PDOException $e) {
-    die("Erro: " . $e->getMessage());
+    error_log("[SISMIL] Erro ao carregar selo: " . $e->getMessage());
+    die("Ocorreu um erro interno ao gerar o selo.");
 }
 ?>
 
@@ -73,7 +77,7 @@ try {
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Selo - <?php echo $placa; ?></title>
+    <title>Selo - <?php echo h($placa); ?></title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap');
 
@@ -90,9 +94,9 @@ try {
             width: 8.5cm;
             height: 5.5cm;
             background: white;
-            border-left: 8px solid <?php echo $cor_tema; ?>;
-            border-right: 8px solid <?php echo $cor_tema; ?>;
-            border-bottom: 8px solid <?php echo $cor_tema; ?>;
+            border-left: 8px solid <?php echo h($cor_tema); ?>;
+            border-right: 8px solid <?php echo h($cor_tema); ?>;
+            border-bottom: 8px solid <?php echo h($cor_tema); ?>;
             border-top: none; 
             box-sizing: border-box;
             display: flex;
@@ -102,7 +106,7 @@ try {
         }
 
         .header-top {
-            background-color: <?php echo $cor_tema; ?>;
+            background-color: <?php echo h($cor_tema); ?>;
             height: 45px;
             width: 100%;
             display: flex;
@@ -213,15 +217,15 @@ try {
 
         <div class="conteudo">
             
-            <div class="placa-txt"><?php echo $placa; ?></div>
-            <div class="veiculo-txt"><?php echo $modelo_cor; ?></div>
+            <div class="placa-txt"><?php echo h($placa); ?></div>
+            <div class="veiculo-txt"><?php echo h($modelo_cor); ?></div>
 
             <div class="dados-container">
-                <div class="linha-dado"><?php echo $identificacao; ?></div>
-                <div class="linha-fone"><?php echo $telefone; ?></div>
+                <div class="linha-dado"><?php echo h($identificacao); ?></div>
+                <div class="linha-fone"><?php echo h($telefone); ?></div>
             </div>
 
-            <div class="validade-footer"><?php echo $validade_texto; ?></div>
+            <div class="validade-footer"><?php echo h($validade_texto); ?></div>
         </div>
     </div>
 

@@ -1,12 +1,11 @@
 <?php
+// ARQUIVO: backend/get_historico.php
+header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/security.php';
 session_start();
+apply_cors();
+require_login(['admin', 'sargenteacao']);
 require 'db_connect.php';
-header('Content-Type: application/json');
-
-// Adaptação: Verifica 'usuario_role'
-if (!isset($_SESSION['usuario_role']) || !in_array(strtolower($_SESSION['usuario_role']), ['admin', 'sargenteacao'])) {
-    echo json_encode(['status' => 'erro', 'msg' => 'Acesso negado.']); exit;
-}
 
 $id = $_GET['id'] ?? 0;
 
@@ -18,6 +17,6 @@ try {
     
     echo json_encode(['status' => 'sucesso', 'dados' => $dados]);
 } catch (PDOException $e) {
-    echo json_encode(['status' => 'erro', 'msg' => $e->getMessage()]);
+    send_error("Erro ao buscar histórico de alterações.", $e->getMessage());
 }
 ?>

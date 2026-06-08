@@ -1,14 +1,10 @@
 <?php
-header("Access-Control-Allow-Origin: *");
+// ARQUIVO: backend/dashboard_stats.php
 header('Content-Type: application/json; charset=utf-8');
-
+require_once __DIR__ . '/security.php';
 session_start();
-if (!isset($_SESSION['usuario_role'])) {
-    header('HTTP/1.1 403 Forbidden');
-    echo json_encode(['status' => 'erro', 'msg' => 'Acesso negado. Por favor, faça login.']);
-    exit;
-}
-
+apply_cors();
+require_login(); // Qualquer usuário autenticado
 require 'db_connect.php';
 
 try {
@@ -73,6 +69,6 @@ try {
     ]);
 
 } catch (PDOException $e) {
-    echo json_encode(['status' => 'erro', 'msg' => $e->getMessage()]);
+    send_error("Erro ao carregar estatísticas do dashboard.", $e->getMessage());
 }
 ?>

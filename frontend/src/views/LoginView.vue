@@ -76,12 +76,14 @@ const handleLogin = async () => {
     const res = await fetch('/sismil/backend/login.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', // Garante envio do cookie de sessão
       body: JSON.stringify({ identidade: cpf.value, senha: senha.value })
     })
     
     const data = await res.json()
     if (data.status === 'sucesso') {
-      authStore.setSession(data.role, cpf.value)
+      // Armazena role, identidade E token CSRF retornado pelo servidor
+      authStore.setSession(data.role, cpf.value, data.csrf_token)
       router.push({ name: 'dashboard' })
     } else {
       errorMessage.value = data.msg || 'Erro ao realizar login.'

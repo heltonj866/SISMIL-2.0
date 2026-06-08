@@ -1,7 +1,10 @@
 <?php
+require_once __DIR__ . '/security.php';
 session_start();
 require 'db_connect.php';
 header('Content-Type: application/json');
+require_login(['admin', 'sargenteacao']);
+validate_csrf();
 
 // Segurança
 if (!isset($_SESSION['usuario_role']) || !in_array(strtolower($_SESSION['usuario_role']), ['admin', 'sargenteacao'])) {

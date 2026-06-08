@@ -4,6 +4,7 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     role: localStorage.getItem('sismil_role') || null,
     identidade: localStorage.getItem('sismil_idt') || null,
+    csrfToken: null, // HIGH-01: Token CSRF armazenado em memória (não no localStorage)
   }),
   getters: {
     isAuthenticated: (state) => !!state.role,
@@ -22,18 +23,23 @@ export const useAuthStore = defineStore('auth', {
     canViewS2Report: (state) => ['admin', 's2'].includes(state.role),
   },
   actions: {
-    setSession(role, identidade) {
+    setSession(role, identidade, csrfToken = null) {
       this.role = role
       this.identidade = identidade
+      this.csrfToken = csrfToken // Armazena token CSRF na memória
       localStorage.setItem('sismil_role', role)
       if (identidade) localStorage.setItem('sismil_idt', identidade)
+    },
+    setCsrfToken(token) {
+      this.csrfToken = token
     },
     logout() {
       this.role = null
       this.identidade = null
+      this.csrfToken = null
       localStorage.removeItem('sismil_role')
       localStorage.removeItem('sismil_idt')
-      fetch('/sismil/backend/logout.php').catch(() => {})
+      fetch('/sismil/backend/logout.php', { credentials: 'include' }).catch(() => {})
     }
   }
 })
