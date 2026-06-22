@@ -69,7 +69,7 @@
               <!-- Mostrar inativos: somente admin e sargenteacao -->
               <div class="checkbox-wrap" v-if="canEdit">
                 <input type="checkbox" v-model="filters.inativos" id="chkInativos">
-                <label for="chkInativos">Exibir Desligados</label>
+                <label for="chkInativos">Apenas Desligados</label>
               </div>
               <!-- Mostrar sem foto: somente admin e sargenteacao -->
               <div class="checkbox-wrap" v-if="canEdit">

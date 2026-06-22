@@ -19,8 +19,8 @@ $mes_aniversario = $_GET['mes_aniversario'] ?? '';
 $inativos = isset($_GET['inativos']) && $_GET['inativos'] == '1';
 
 try {
-    // Se a caixinha não estiver marcada, mostra APENAS os ativos (status_ativo = 1).
-    $statusFilter = $inativos ? "1=1" : "status_ativo = 1";
+    // Se a caixinha estiver marcada, mostra APENAS os desligados (status_ativo = 0).
+    $statusFilter = $inativos ? "status_ativo = 0" : "status_ativo = 1";
     
     $sql = "SELECT * FROM tb_militares WHERE $statusFilter";
     $params = [];

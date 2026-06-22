@@ -62,7 +62,7 @@
             </div>
             
             <div class="input-group">
-              <label>Exibir Desligados</label>
+              <label>Apenas Desligados</label>
               <input type="checkbox" v-model="filters.inativos">
             </div>
             
