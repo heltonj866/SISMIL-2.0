@@ -29,9 +29,9 @@
             <i class="fas fa-search"></i> Inspecionar
           </button>
         </template>
-        <!-- Botão Resumo para todos -->
+        <!-- Botão Dados Pessoais para todos -->
         <button class="btn-card btn-outline" @click="$emit('resumo', militar)">
-          <i class="fas fa-id-card"></i> Resumo
+          <i class="fas fa-id-card"></i> Dados Pessoais
         </button>
       </div>
     </div>
