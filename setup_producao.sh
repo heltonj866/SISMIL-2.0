@@ -36,7 +36,7 @@ echo ""
 # ==============================================================
 
 SISMIL_DIR="/var/www/html/sismil"           # Caminho do SISMIL na VM
-SISMIL_DB_NAME="sismil_prod"                # Nome do banco de dados de produção
+SISMIL_DB_NAME="sismil_db"                  # Nome do banco de dados de produção
 SISMIL_DB_USER="sismil_app"                 # Usuário MySQL exclusivo do SISMIL
 SISMIL_DB_PASS=""                           # Senha do usuário MySQL (será solicitada se vazia)
 SISMIL_SERVER_IP=""                         # IP ou domínio da intranet (ex: 192.168.1.100)
@@ -173,6 +173,7 @@ cat > "$CONFIG_FILE" << EOF
 // ============================================================
 
 // MODO PRODUÇÃO: cookies seguros, erros ocultos
+// false = usa as definições DB_*_PROD abaixo
 define('APP_ENV_DEV', false);
 
 // --- BANCO DE DADOS (DESENVOLVIMENTO) ---
@@ -182,6 +183,7 @@ define('DB_USER_DEV', 'root');
 define('DB_PASS_DEV', '');
 
 // --- BANCO DE DADOS (PRODUÇÃO) ---
+// Mesmo banco (sismil_db), mas com usuário de menor privilégio
 define('DB_HOST_PROD', 'localhost');
 define('DB_NAME_PROD', '${SISMIL_DB_NAME}');
 define('DB_USER_PROD', '${SISMIL_DB_USER}');
