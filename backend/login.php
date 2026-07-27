@@ -6,13 +6,15 @@ require_once 'db_connect.php';
 apply_cors();
 
 // --- MED-01 + HIGH-01: Iniciar sessão com cookies seguros ---
+// O flag 'secure' é ativado automaticamente quando APP_ENV_DEV = false (produção com HTTPS)
+$is_prod = defined('APP_ENV_DEV') && APP_ENV_DEV === false;
 session_set_cookie_params([
     'lifetime' => 0,
     'path'     => '/',
     'domain'   => '',
-    'secure'   => false,  // Alterar para true se usar HTTPS
-    'httponly' => true,   // Bloqueia acesso via JavaScript (XSS mitigation)
-    'samesite' => 'Strict' // Bloqueia envio em requisições cross-site (CSRF mitigation)
+    'secure'   => $is_prod,  // true em produção (HTTPS), false em desenvolvimento local
+    'httponly' => true,       // Bloqueia acesso via JavaScript (XSS mitigation)
+    'samesite' => 'Strict'   // Bloqueia envio em requisições cross-site (CSRF mitigation)
 ]);
 session_start();
 

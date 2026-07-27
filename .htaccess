@@ -2,6 +2,14 @@
   RewriteEngine On
   RewriteBase /sismil/
 
+  # ==============================================================
+  # PRODUÇÃO: Descomentar o bloco abaixo para forçar HTTPS
+  # Necessário após instalar o certificado SSL no servidor.
+  # NÃO ativar em desenvolvimento local (XAMPP sem HTTPS).
+  # ==============================================================
+  # RewriteCond %{HTTPS} off
+  # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
   # Ignora a pasta backend para que as APIs continuem funcionando
   RewriteCond %{REQUEST_URI} ^/sismil/backend/ [NC]
   RewriteRule ^ - [L]
