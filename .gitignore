@@ -9,3 +9,5 @@
 *.log
 # Arquivo de configuração local com credenciais — NUNCA comitar
 /backend/config.php
+# Backups gerados pelo setup_producao.sh
+*.bak_sismil
