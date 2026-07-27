@@ -5,12 +5,12 @@ header('Content-Type: application/json');
 apply_cors();
 
 // Garante os mesmos atributos de cookie seguro definidos no login.php
-$is_prod = defined('APP_ENV_DEV') && APP_ENV_DEV === false;
+$is_https = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
 session_set_cookie_params([
     'lifetime' => 0,
     'path'     => '/',
     'domain'   => '',
-    'secure'   => $is_prod,
+    'secure'   => $is_https,
     'httponly' => true,
     'samesite' => 'Strict'
 ]);
