@@ -26,12 +26,13 @@ class MilitarController {
         try {
             $repo = new MilitarRepository();
             $data = $repo->searchComplex($filtros);
-            Response::json($data);
+            Response::json(['dados' => $data], 'Busca realizada com sucesso.');
         } catch (\Exception $e) {
             error_log("[SISMIL] Erro ao buscar militares: " . $e->getMessage());
             Response::error('Erro ao buscar dados.', 500);
         }
     }
+
 
     public function getById(Request $request) {
         require_login();
@@ -129,7 +130,7 @@ class MilitarController {
         try {
             $repo = new AlteracaoRepository();
             $data = $repo->getByMilitarId($id);
-            Response::json($data);
+            Response::json(['dados' => $data]);
         } catch (\Exception $e) {
             error_log("[SISMIL] Erro ao buscar histórico: " . $e->getMessage());
             Response::error('Erro ao buscar histórico.', 500);
