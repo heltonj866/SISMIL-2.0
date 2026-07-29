@@ -537,15 +537,27 @@ const onCepInput = async (e) => {
   
   if (v.length === 8) {
     try {
-      const res = await fetch(`https://viacep.com.br/ws/${v}/json/`)
-      const json = await res.json()
-      if (!json.erro) {
-        form.value.endereco = json.logradouro
-        form.value.bairro = json.bairro
-        form.value.cidade = json.localidade
-        form.value.estado = json.uf
+      let json = null
+      try {
+        const res = await apiFetch(`/sismil/backend/api/cep?cep=${v}`)
+        const data = await res.json()
+        if (data.status === 'sucesso' && data.dados) {
+          json = data.dados
+        }
+      } catch (err) {}
+
+      if (!json) {
+        const res = await fetch(`https://viacep.com.br/ws/${v}/json/`)
+        json = await res.json()
       }
-    } catch (err) { console.error(err) }
+
+      if (json && !json.erro) {
+        form.value.endereco = json.logradouro || form.value.endereco
+        form.value.bairro = json.bairro || form.value.bairro
+        form.value.cidade = json.localidade || form.value.cidade
+        form.value.estado = json.uf || form.value.estado
+      }
+    } catch (err) { console.error('Erro na consulta do CEP:', err) }
   }
 }
 
