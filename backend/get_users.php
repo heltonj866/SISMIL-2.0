@@ -27,7 +27,7 @@ try {
             'role' => $u['role'],
             'ativo' => $u['ativo'] ?? 1,
             'posto_grad' => $u['posto_grad'] ?? '',
-            'nome_guerra' => $u['nome_guerra'] ?? 'Usuário',
+            'nome_guerra' => $u['nome'] ?? 'Usuário',
             'subunidade' => $u['subunidade'] ?? '---'
         ];
     }

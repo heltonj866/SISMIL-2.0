@@ -22,7 +22,7 @@ class UsuarioRepository {
      */
     public function findAllSecure(): array {
         // Segurança: omitimos o campo 'senha_hash' da listagem base
-        $stmt = $this->db->query("SELECT id, identidade, role, ativo, subunidade, nome, posto_grad, criacao FROM tb_usuarios ORDER BY id DESC");
+        $stmt = $this->db->query("SELECT id, identidade, role, ativo, subunidade, nome, posto_grad FROM tb_usuarios ORDER BY id DESC");
         return $stmt->fetchAll();
     }
 }
