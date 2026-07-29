@@ -29,6 +29,9 @@ export async function apiFetch(url, options = {}) {
   // Injeta o token CSRF automaticamente em todas as requisições POST
   if (authStore.csrfToken) {
     headers['X-Csrf-Token'] = authStore.csrfToken
+    if (options.body instanceof FormData && !options.body.has('csrf_token')) {
+      options.body.append('csrf_token', authStore.csrfToken)
+    }
   }
 
   return fetch(url, {
