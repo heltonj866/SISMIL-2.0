@@ -164,6 +164,7 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useToast, useConfirm } from '../composables/useToast'
+import { VeiculoService } from '@/services/VeiculoService'
 
 const { success: toastSuccess, error: toastError, warning: toastWarning } = useToast()
 const { ask: confirmDialog } = useConfirm()
@@ -198,9 +199,9 @@ const formatData = (d) => {
 const fetchVeiculos = async () => {
   if (!props.militarId) return
   try {
-    const res = await fetch(`/sismil/backend/get_veiculos.php?militar_id=${props.militarId}`)
-    const json = await res.json()
-    if (json.status === 'sucesso') veiculos.value = json.dados
+    const json = await VeiculoService.getByMilitar(props.militarId)
+    if (json.status === 'sucesso') veiculos.value = json.dados || []
+    else veiculos.value = json || []
   } catch (e) { console.error(e) }
 }
 
@@ -230,12 +231,11 @@ const salvar = async () => {
   if (file.value) fd.append('v_pdf', file.value)
 
   try {
-    const res = await fetch('/sismil/backend/save_veiculo.php', { method: 'POST', body: fd })
-    const json = await res.json()
-    if (json.status === 'sucesso') {
+    const json = await VeiculoService.save(fd)
+    if (json.status === 'sucesso' || json.msg === 'Veículo salvo com sucesso') {
       cancelarForm()
       fetchVeiculos()
-    } else { toastError('Erro: ' + json.msg) }
+    } else { toastError('Erro: ' + (json.msg || 'Erro desconhecido')) }
   } catch (e) { toastError('Erro de conexão.') }
   finally { loading.value = false }
 }
@@ -244,14 +244,9 @@ const excluir = async (id) => {
   const ok = await confirmDialog('Deseja realmente excluir este veículo?', { title: 'Confirmação' })
   if (!ok) return
   try {
-    const res = await fetch('/sismil/backend/excluir_veiculo.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id })
-    })
-    const json = await res.json()
-    if (json.status === 'sucesso') fetchVeiculos()
-    else toastError('Erro: ' + json.msg)
+    const json = await VeiculoService.delete(id)
+    if (json.status === 'sucesso' || json.msg === 'Veículo excluído com sucesso') fetchVeiculos()
+    else toastError('Erro: ' + (json.msg || 'Erro desconhecido'))
   } catch (e) { console.error(e) }
 }
 
@@ -263,16 +258,11 @@ const avaliarVeiculo = (v) => {
 const salvarAvaliacao = async () => {
   loading.value = true
   try {
-    const res = await fetch('/sismil/backend/toggle_homolog_veiculo.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: avalForm.value.id, status: avalForm.value.status, observacao: avalForm.value.obs })
-    })
-    const json = await res.json()
-    if (json.status === 'sucesso') {
+    const json = await VeiculoService.homologar(avalForm.value.id, avalForm.value.status, avalForm.value.obs)
+    if (json.status === 'sucesso' || json.msg === 'Avaliação salva com sucesso') {
       showAvalModal.value = false
       fetchVeiculos()
-    } else { toastError('Erro: ' + json.msg) }
+    } else { toastError('Erro: ' + (json.msg || 'Erro desconhecido')) }
   } catch (e) { toastError('Erro de conexão.') }
   finally { loading.value = false }
 }

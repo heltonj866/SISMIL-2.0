@@ -23,7 +23,7 @@
         <div class="stat-card bg-primary-grad">
           <div class="stat-info">
             <h6>Efetivo Cadastrado</h6>
-            <h2>{{ stats.militares }}</h2>
+            <h2>{{ stats.efetivo }}</h2>
           </div>
         </div>
         <div class="stat-card bg-secondary-grad">
@@ -35,7 +35,7 @@
         <div class="stat-card bg-warning-grad">
           <div class="stat-info">
             <h6 class="text-danger">Aguardando Homologação</h6>
-            <h2 class="text-danger">{{ stats.pendentes }}</h2>
+            <h2 class="text-danger">{{ stats.veiculos_pendentes }}</h2>
           </div>
         </div>
       </div>
@@ -125,12 +125,22 @@ import MilitarCard from '../components/MilitarCard.vue'
 import MilitarForm from '../components/MilitarForm.vue'
 import VeiculoModal from '../components/VeiculoModal.vue'
 
+import { DashboardService } from '@/services/DashboardService'
+import { MilitarService } from '@/services/MilitarService'
+
 const router = useRouter()
 const authStore = useAuthStore()
 
 const postos = ["Cel", "Ten Cel", "Maj", "Cap", "1º Ten", "2º Ten", "Asp", "Subten", "1º Sgt", "2º Sgt", "3º Sgt", "Cb", "Sd EP", "Sd EV", "SC"]
 
-const stats = ref({ militares: 0, veiculos: 0, pendentes: 0 })
+const stats = ref({
+  efetivo: 0,
+  inativos: 0,
+  arranchados_hoje: 0,
+  veiculos: 0,
+  veiculos_pendentes: 0
+})
+
 const searchResults = ref([])
 const hasSearched = ref(false)
 const loading = ref(false)
@@ -146,16 +156,15 @@ const filters = ref({
   inativos: false
 })
 
-const fetchStats = async () => {
+async function fetchStats() {
   try {
-    const res = await fetch('/sismil/backend/dashboard_stats.php')
-    const json = await res.json()
-    if (json.status === 'sucesso') {
-      stats.value.militares = json.militares
-      stats.value.veiculos = json.veiculos
-      stats.value.pendentes = json.pendentes
+    const data = await DashboardService.getStats()
+    if (data) {
+      stats.value = data
     }
-  } catch (err) { console.error(err) }
+  } catch (err) {
+    console.error('Erro ao buscar estatísticas:', err)
+  }
 }
 
 onMounted(() => {
@@ -171,14 +180,17 @@ const handleSearch = async () => {
   loading.value = true
   hasSearched.value = true
   try {
-    const inativos = filters.value.inativos ? 1 : 0
-    const url = `/sismil/backend/search.php?tipo_busca=geral&termo=${encodeURIComponent(filters.value.termo)}&posto=${encodeURIComponent(filters.value.posto)}&qmg=&inativos=${inativos}`
-    const res = await fetch(url)
-    const json = await res.json()
+    const params = {
+      tipo_busca: 'geral',
+      termo: filters.value.termo,
+      posto: filters.value.posto,
+      inativos: filters.value.inativos ? 1 : 0
+    }
+    const json = await MilitarService.search(params)
     if (json.status === 'sucesso') {
       searchResults.value = json.dados || []
     } else {
-      searchResults.value = []
+      searchResults.value = json || [] // O Router do PHP (Response::json) não embrulha em 'status' por padrão, retorna direto o array se você mandou array
     }
   } catch (err) {
     console.error(err)
@@ -212,8 +224,8 @@ const handleSaved = () => {
   }
 }
 
-const handleDesligar = (m) => toastWarning('Função de desligar em desenvolvimento.')
-const handleReativar = (m) => toastWarning('Função de reativar em desenvolvimento.')
+const handleDesligar = (m) => toastWarning('Função de desligar no Frontend em desenvolvimento.')
+const handleReativar = (m) => toastWarning('Função de reativar no Frontend em desenvolvimento.')
 
 const handleInspecionar = (m) => {
   selectedMilitar.value = m
@@ -221,8 +233,6 @@ const handleInspecionar = (m) => {
 }
 
 const handleVer = (m) => {
-  // Can just open edit mode for viewing, and handle readonly inside MilitarForm
-  // For now, let's just open form
   selectedMilitar.value = m
   showForm.value = true
 }

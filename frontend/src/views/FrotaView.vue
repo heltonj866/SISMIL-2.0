@@ -80,11 +80,12 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from '../composables/useToast'
-const { error: toastError } = useToast()
 import MilitarCard from '../components/MilitarCard.vue'
 import MilitarForm from '../components/MilitarForm.vue'
 import MilitarModalLeitura from '../components/MilitarModalLeitura.vue'
+import { MilitarService } from '@/services/MilitarService'
 
+const { error: toastError } = useToast()
 const route = useRoute()
 
 const filtroOpts = [
@@ -114,9 +115,12 @@ const handleSearch = async () => {
   hasSearched.value = true
   showInspecao.value = false
   try {
-    const res = await fetch(`/sismil/backend/search.php?tipo_busca=cnh&filtro_cnh=${filtro.value}`)
-    const json = await res.json()
-    if (json.status === 'sucesso') resultados.value = json.dados
+    const json = await MilitarService.search({
+      tipo_busca: 'cnh',
+      filtro_cnh: filtro.value
+    })
+    if (json.status === 'sucesso') resultados.value = json.dados || []
+    else resultados.value = json || []
   } catch (e) {
     toastError('Erro de conexão ao buscar condutores.')
   } finally {

@@ -105,6 +105,8 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue'
+import { MilitarService } from '@/services/MilitarService'
+import { VeiculoService } from '@/services/VeiculoService'
 
 const props = defineProps({ show: Boolean, militarId: [Number, String], completo: { type: Boolean, default: false } })
 defineEmits(['close'])
@@ -143,19 +145,16 @@ const fetchDados = async (id) => {
   historico.value = []
   if (!id) return
   try {
-    const res = await fetch(`/sismil/backend/get_militar.php?id=${id}`)
-    const json = await res.json()
+    const json = await MilitarService.getById(id)
     if (json.status === 'sucesso') dados.value = json.dados
 
     loadingVeiculos.value = true
-    const resV = await fetch(`/sismil/backend/get_veiculos.php?militar_id=${id}`)
-    const jsonV = await resV.json()
+    const jsonV = await VeiculoService.getByMilitar(id)
     if (jsonV.status === 'sucesso') veiculos.value = jsonV.dados
 
     if (props.completo) {
       loadingHistorico.value = true
-      const resH = await fetch(`/sismil/backend/get_historico.php?militar_id=${id}`)
-      const jsonH = await resH.json()
+      const jsonH = await MilitarService.getHistorico(id)
       if (jsonH.status === 'sucesso') historico.value = jsonH.dados
     }
   } catch (e) { console.error(e) }

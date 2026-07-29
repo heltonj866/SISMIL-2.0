@@ -145,15 +145,15 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useToast, useConfirm } from '../composables/useToast'
+import { UserService } from '@/services/UserService'
 
-const { success: toastSuccess, error: toastError } = useToast()
+const { success: toastSuccess, error: toastError, warning: toastWarning } = useToast()
 const { ask: confirmDialog } = useConfirm()
 
 const usuarios = ref([])
 const showModal = ref(false)
 const loading = ref(false)
 const isEditing = ref(false)
-const showPassword = ref(false)
 const editId = ref(null)
 
 const form = ref({ identidade: '', senha: '', role: 'user', ativo: '1', subunidade: '', nome: '', posto_grad: '' })
@@ -169,9 +169,8 @@ const roleIcon = (r) => {
 
 const fetchUsers = async () => {
   try {
-    const res = await fetch('/sismil/backend/get_users.php')
-    const json = await res.json()
-    if (json.status === 'sucesso') usuarios.value = json.data
+    const json = await UserService.getAll()
+    if (json.status === 'sucesso') usuarios.value = json.data || []
   } catch (e) { toastError('Erro ao carregar usuários.') }
 }
 
@@ -207,46 +206,38 @@ const handleSave = async () => {
   try {
     if (isEditing.value) {
       // Update
-      const res = await fetch('/sismil/backend/update_user.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          edit_id: editId.value,
-          new_user_role: form.value.role,
-          new_user_pass: form.value.senha,
-          ativo: form.value.ativo,
-          new_user_subunidade: form.value.subunidade,
-          nome: form.value.nome,
-          posto_grad: form.value.posto_grad
-        })
-      })
-      const json = await res.json()
+      const payload = {
+        edit_id: editId.value,
+        new_user_role: form.value.role,
+        new_user_pass: form.value.senha,
+        ativo: form.value.ativo,
+        new_user_subunidade: form.value.subunidade,
+        nome: form.value.nome,
+        posto_grad: form.value.posto_grad
+      }
+      const json = await UserService.update(payload)
       if (json.status === 'sucesso') {
         toastSuccess('Usuário atualizado com sucesso!')
         showModal.value = false
         fetchUsers()
-      } else { toastError('Erro: ' + json.msg) }
+      } else { toastError('Erro: ' + (json.msg || 'Erro desconhecido')) }
     } else {
       // Create
-      const res = await fetch('/sismil/backend/create_user.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          new_user_idt: form.value.identidade,
-          new_user_pass: form.value.senha,
-          new_user_role: form.value.role,
-          new_user_subunidade: form.value.subunidade,
-          nome: form.value.nome,
-          posto_grad: form.value.posto_grad
-        })
-      })
-      const json = await res.json()
+      const payload = {
+        new_user_idt: form.value.identidade,
+        new_user_pass: form.value.senha,
+        new_user_role: form.value.role,
+        new_user_subunidade: form.value.subunidade,
+        nome: form.value.nome,
+        posto_grad: form.value.posto_grad
+      }
+      const json = await UserService.create(payload)
       if (json.status === 'sucesso') {
         toastSuccess('Usuário criado com sucesso!')
         showModal.value = false
         form.value = { identidade: '', senha: '', role: 'user', ativo: '1', subunidade: '', nome: '', posto_grad: '' }
         fetchUsers()
-      } else { toastError('Erro: ' + json.msg) }
+      } else { toastError('Erro: ' + (json.msg || 'Erro desconhecido')) }
     }
   } catch (e) { toastError('Erro de conexão com o servidor.') }
   finally { loading.value = false }
@@ -259,14 +250,11 @@ const handleDelete = async (u) => {
   )
   if (!ok) return
   try {
-    const fd = new FormData()
-    fd.append('id_user', u.id)
-    const res = await fetch('/sismil/backend/delete_user.php', { method: 'POST', body: fd })
-    const json = await res.json()
+    const json = await UserService.delete(u.id)
     if (json.status === 'sucesso') {
       toastSuccess('Usuário excluído.')
       fetchUsers()
-    } else { toastError('Erro: ' + json.msg) }
+    } else { toastError('Erro: ' + (json.msg || 'Erro desconhecido')) }
   } catch (e) { toastError('Erro de conexão.') }
 }
 

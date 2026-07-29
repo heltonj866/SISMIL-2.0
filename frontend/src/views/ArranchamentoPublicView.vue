@@ -95,6 +95,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { ArranchamentoService } from '@/services/ArranchamentoService'
 
 const router = useRouter()
 const postos = ["Cel", "Ten Cel", "Maj", "Cap", "1º Ten", "2º Ten", "Asp", "Subten", "1º Sgt", "2º Sgt", "3º Sgt", "Cb", "Sd EP", "Sd EV", "SC"]
@@ -176,19 +177,14 @@ const handleSubmit = async () => {
   }
   
   try {
-    const res = await fetch('/sismil/backend/save_arranchamento.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-    const json = await res.json()
+    const json = await ArranchamentoService.save(payload)
     
-    if (json.status === 'sucesso') {
+    if (json.status === 'sucesso' || json.msg === 'Arranchamento registrado com sucesso.') {
       successMsg.value = "Arranchamento confirmado com sucesso!"
       // Limpa as seleções
       days.value.forEach(d => { d.cafe = false; d.almoco = false })
     } else {
-      errorMsg.value = "Erro: " + json.msg
+      errorMsg.value = "Erro: " + (json.msg || 'Erro desconhecido')
     }
   } catch (err) {
     errorMsg.value = "Erro de conexão com o servidor."

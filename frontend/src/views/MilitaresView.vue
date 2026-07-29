@@ -149,13 +149,15 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useToast, useConfirm } from '../composables/useToast'
-const { error: toastError } = useToast()
-const { ask: confirmDialog } = useConfirm()
 import { useAuthStore } from '../stores/auth'
 import MilitarCard from '../components/MilitarCard.vue'
 import MilitarForm from '../components/MilitarForm.vue'
 import MilitarModalLeitura from '../components/MilitarModalLeitura.vue'
 import DesligarModal from '../components/DesligarModal.vue'
+import { MilitarService } from '@/services/MilitarService'
+
+const { error: toastError, success: toastSuccess } = useToast()
+const { ask: confirmDialog } = useConfirm()
 
 const authStore = useAuthStore()
 const canEdit = computed(() => authStore.canEdit)
@@ -181,11 +183,20 @@ const militarParaDesligar = ref(null)
 const handleSearch = async () => {
   loading.value = true
   hasSearched.value = true
-  const q = `?termo=${encodeURIComponent(filters.value.termo)}&posto=${encodeURIComponent(filters.value.posto)}&subunidade=${encodeURIComponent(filters.value.subunidade)}&inativos=${filters.value.inativos ? 1 : 0}&sem_foto=${filters.value.sem_foto ? 1 : 0}&mes_aniversario=${encodeURIComponent(filters.value.mes_aniversario)}`
+  
+  const params = {
+    termo: filters.value.termo,
+    posto: filters.value.posto,
+    subunidade: filters.value.subunidade,
+    inativos: filters.value.inativos ? 1 : 0,
+    sem_foto: filters.value.sem_foto ? 1 : 0,
+    mes_aniversario: filters.value.mes_aniversario
+  }
+  
   try {
-    const res = await fetch('/sismil/backend/search.php' + q)
-    const json = await res.json()
-    if (json.status === 'sucesso') searchResults.value = json.dados
+    const json = await MilitarService.search(params)
+    if (json.status === 'sucesso') searchResults.value = json.dados || []
+    else searchResults.value = json || []
   } catch (e) { toastError('Erro de conexão.') }
   finally { loading.value = false }
 }
@@ -215,14 +226,11 @@ const handleReativar = async (m) => {
   const ok = await confirmDialog(`Deseja reintegrar o militar ${m.posto_grad} ${m.nome_guerra} ao Efetivo Pronto?`, { title: 'Confirmação' })
   if (!ok) return
   try {
-    const res = await fetch('/sismil/backend/reativar_militar.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: m.id })
-    })
-    const json = await res.json()
-    if (json.status === 'sucesso') handleSearch()
-    else toastError('Erro: ' + json.msg)
+    const json = await MilitarService.reativar({ id: m.id })
+    if (json.status === 'sucesso') {
+      toastSuccess('Militar reativado com sucesso.')
+      handleSearch()
+    } else toastError('Erro: ' + (json.msg || 'Erro desconhecido'))
   } catch (e) { toastError('Erro de conexão.') }
 }
 

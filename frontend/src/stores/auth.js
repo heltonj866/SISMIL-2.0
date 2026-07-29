@@ -39,7 +39,10 @@ export const useAuthStore = defineStore('auth', {
       this.csrfToken = null
       localStorage.removeItem('sismil_role')
       localStorage.removeItem('sismil_idt')
-      fetch('/sismil/backend/logout.php', { credentials: 'include' }).catch(() => {})
+      
+      import('@/services/AuthService').then(module => {
+        module.AuthService.logout().catch(() => {})
+      })
     }
   }
 })

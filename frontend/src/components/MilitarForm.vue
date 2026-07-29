@@ -365,6 +365,7 @@ import { useAuthStore } from '../stores/auth'
 import { useToast, useConfirm } from '../composables/useToast'
 import VehicleList from './VehicleList.vue'
 import S1History from './S1History.vue'
+import { MilitarService } from '@/services/MilitarService'
 
 const { success: toastSuccess, error: toastError, warning: toastWarning } = useToast()
 const { ask: confirmDialog } = useConfirm()
@@ -409,8 +410,7 @@ const fetchDadosCompletos = async () => {
   const id = props.militar?.id
   if (!id) { dadosCompletos.value = null; return }
   try {
-    const res = await fetch(`/sismil/backend/get_militar.php?id=${id}`)
-    const json = await res.json()
+    const json = await MilitarService.getById(id)
     if (json.status === 'sucesso') {
       dadosCompletos.value = json.dados
       // Preenche o form com dados completos
@@ -560,10 +560,9 @@ const handleSave = async () => {
   if (fileUploads.value.nada_consta) fd.append('pdf_nada_consta', fileUploads.value.nada_consta)
   if (fileUploads.value.pdf_habilitacao) fd.append('pdf_habilitacao', fileUploads.value.pdf_habilitacao)
   try {
-    const res = await fetch('/sismil/backend/save_militar.php', { method: 'POST', body: fd })
-    const json = await res.json()
-    if (json.status === 'sucesso') emit('saved')
-    else toastError('Erro: ' + json.msg)
+    const json = await MilitarService.save(fd)
+    if (json.status === 'sucesso' || json.id) emit('saved')
+    else toastError('Erro: ' + (json.msg || 'Erro ao salvar.'))
   } catch (e) { toastError('Erro de conexão ao salvar.') }
   finally { loading.value = false }
 }
@@ -572,14 +571,9 @@ const handleExcluirPermanente = async () => {
   const ok = await confirmDialog('ATENÇÃO: Isso apagará permanentemente o militar, seu histórico e toda a frota! Use apenas se o cadastro foi um erro.', { title: 'Confirmação', variant: 'danger' })
   if (!ok) return
   try {
-    const res = await fetch('/sismil/backend/delete_militar.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: props.militar.id })
-    })
-    const json = await res.json()
+    const json = await MilitarService.delete({ id: props.militar.id })
     if (json.status === 'sucesso') emit('saved')
-    else toastError('Erro ao excluir: ' + json.msg)
+    else toastError('Erro ao excluir: ' + (json.msg || 'Erro desconhecido'))
   } catch (e) { toastError('Erro de conexão ao excluir.') }
 }
 </script>

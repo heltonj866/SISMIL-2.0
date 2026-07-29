@@ -40,6 +40,8 @@
 <script setup>
 import { ref } from 'vue'
 import { useToast } from '../composables/useToast'
+import { MilitarService } from '@/services/MilitarService'
+
 const { warning: toastWarning, error: toastError } = useToast()
 
 const props = defineProps({ show: Boolean, militar: Object })
@@ -68,17 +70,16 @@ const confirmar = async () => {
   }
   loading.value = true
   const fd = new FormData()
-  fd.append('militar_id', props.militar.id)
+  fd.append('id', props.militar.id) // MilitarController espera 'id'
   fd.append('nada_consta', arquivo.value)
   try {
-    const res = await fetch('/sismil/backend/desligar_militar.php', { method: 'POST', body: fd })
-    const json = await res.json()
-    if (json.status === 'sucesso') {
+    const json = await MilitarService.desligar(fd)
+    if (json.status === 'sucesso' || json.msg?.includes('sucesso')) {
       arquivo.value = null
       if (fileInput.value) fileInput.value.value = ''
       emit('done')
     } else {
-      toastError('Erro: ' + json.msg)
+      toastError('Erro: ' + (json.msg || 'Erro desconhecido'))
     }
   } catch (e) {
     toastError('Erro de conexão.')

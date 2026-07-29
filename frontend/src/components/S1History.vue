@@ -94,6 +94,8 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useToast, useConfirm } from '../composables/useToast'
+import { MilitarService } from '@/services/MilitarService'
+
 const { warning: toastWarning, error: toastError } = useToast()
 const { ask: confirmDialog } = useConfirm()
 
@@ -116,9 +118,9 @@ const formatData = (d) => {
 const fetchHistorico = async () => {
   if(!props.militarId) return
   try {
-    const res = await fetch(`/sismil/backend/get_historico.php?id=${props.militarId}`)
-    const json = await res.json()
-    if(json.status === 'sucesso') historico.value = json.dados
+    const json = await MilitarService.getHistorico(props.militarId)
+    if(json.status === 'sucesso') historico.value = json.dados || []
+    else historico.value = json || []
   } catch(e) { console.error(e) }
 }
 
@@ -136,14 +138,13 @@ const salvar = async () => {
   if(file.value) fd.append('s1_file', file.value)
 
   try {
-    const res = await fetch('/sismil/backend/save_alteracao.php', { method: 'POST', body: fd })
-    const json = await res.json()
-    if(json.status === 'sucesso') {
+    const json = await MilitarService.saveHistorico(fd)
+    if(json.status === 'sucesso' || json.msg?.includes('sucesso')) {
       showForm.value = false
       form.value = { cat: 'DISCIPLINA', tipo: '', data: '', dias: 0, doc: '', desc: '' }
       file.value = null
       fetchHistorico()
-    } else { toastError('Erro: ' + json.msg) }
+    } else { toastError('Erro: ' + (json.msg || 'Erro desconhecido')) }
   } catch(e) { toastError('Erro de conexão.') }
   finally { loading.value = false }
 }
@@ -152,8 +153,7 @@ const excluir = async (id) => {
   const ok = await confirmDialog('Excluir este registro permanentemente?', { title: 'Confirmação' })
   if(ok) {
     try {
-      const fd = new FormData(); fd.append('id', id);
-      await fetch('/sismil/backend/excluir_alteracao.php', { method: 'POST', body: fd })
+      await MilitarService.deleteHistorico(id)
       fetchHistorico()
     } catch(e) {}
   }

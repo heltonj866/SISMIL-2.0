@@ -99,6 +99,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from '../composables/useToast'
+import { ArranchamentoService } from '@/services/ArranchamentoService'
 
 const { error: toastError } = useToast()
 
@@ -119,13 +120,12 @@ const fetchData = async () => {
   if (!selectedDate.value) return
   loading.value = true
   try {
-    const res = await fetch(`/sismil/backend/get_arranchamento.php?data=${selectedDate.value}`)
-    const json = await res.json()
-    if (json.status === 'sucesso') {
-      totais.value = json.totais
-      registros.value = json.registros
+    const json = await ArranchamentoService.getByData(selectedDate.value)
+    if (json.status === 'sucesso' || json.registros) {
+      totais.value = json.totais || { cafe: 0, almoco: 0 }
+      registros.value = json.registros || []
     } else {
-      toastError("Erro: " + json.msg)
+      toastError("Erro: " + (json.msg || 'Erro desconhecido'))
     }
   } catch (err) {
     toastError("Erro de conexão com o servidor.")
