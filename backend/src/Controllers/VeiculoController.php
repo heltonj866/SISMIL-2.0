@@ -34,7 +34,11 @@ class VeiculoController {
             Response::json(null, "Veículo salvo com sucesso.");
         } catch (\Exception $e) {
             error_log("[SISMIL] Erro no save_veiculo: " . $e->getMessage());
-            Response::error($e->getMessage(), 500);
+            $raw = $e->getMessage();
+            if (strpos($raw, '1062') !== false || strpos($raw, 'Duplicate entry') !== false) {
+                Response::error('Já existe um veículo cadastrado com esta placa.', 409);
+            }
+            Response::error('Erro ao salvar veículo.', 500);
         }
     }
     

@@ -71,15 +71,23 @@ class MilitarController {
         
         try {
             $service = new MilitarService();
-            // A superglobal $_POST (e $_FILES) já foi manipulada em Request, 
-            // mas o UploadService ainda espera $_FILES. 
-            // Por hora passaremos $_POST para manter retrocompatibilidade com UploadService.
             $id = $service->salvarMilitar($_POST);
             
             Response::json(['id' => $id], "Militar salvo com sucesso");
         } catch (\Exception $e) {
             error_log("[SISMIL] Erro ao salvar militar: " . $e->getMessage());
-            Response::error($e->getMessage(), 500);
+            $raw = $e->getMessage();
+            if (strpos($raw, '1062') !== false || strpos($raw, 'Duplicate entry') !== false) {
+                if (stripos($raw, 'cpf') !== false) {
+                    $msg = 'Já existe um militar cadastrado com este CPF.';
+                } elseif (stripos($raw, 'idt_militar') !== false) {
+                    $msg = 'Já existe um militar cadastrado com esta Identidade Militar.';
+                } else {
+                    $msg = 'Já existe um cadastro com estes dados únicos no sistema.';
+                }
+                Response::error($msg, 409);
+            }
+            Response::error('Erro ao salvar militar.', 500);
         }
     }
     
