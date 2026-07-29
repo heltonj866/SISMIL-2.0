@@ -39,11 +39,11 @@ class UserController {
         $sub = trim($dados['new_user_subunidade'] ?? '');
 
         if (empty($idt) || empty($pass) || empty($role)) {
-            Response::json(['status' => 'erro', 'msg' => 'Preencha os campos obrigatórios.']);
+            Response::error('Preencha os campos obrigatórios.', 400);
         }
         
         if (empty($militarId) && (empty($nome) || empty($posto))) {
-            Response::json(['status' => 'erro', 'msg' => 'Se o usuário não for vinculado a um militar, preencha Nome e Posto.']);
+            Response::error('Se o usuário não for vinculado a um militar, preencha Nome e Posto.', 400);
         }
 
         try {
@@ -51,7 +51,7 @@ class UserController {
             $stmt = $pdo->prepare("SELECT id FROM tb_usuarios WHERE identidade = ?");
             $stmt->execute([$idt]);
             if ($stmt->fetch()) {
-                Response::json(['status' => 'erro', 'msg' => 'Login já existe.']);
+                Response::error('Login já existe.', 409);
             }
 
             $hash = password_hash($pass, PASSWORD_DEFAULT);
@@ -84,11 +84,11 @@ class UserController {
         $sub = trim($dados['new_user_subunidade'] ?? '');
 
         if ($id <= 0 || empty($role)) {
-            Response::json(['status' => 'erro', 'msg' => 'Dados inválidos.']);
+            Response::error('Dados inválidos.', 400);
         }
         
         if (empty($militarId) && (empty($nome) || empty($posto))) {
-            Response::json(['status' => 'erro', 'msg' => 'Se o usuário não for vinculado a um militar, preencha Nome e Posto.']);
+            Response::error('Se o usuário não for vinculado a um militar, preencha Nome e Posto.', 400);
         }
 
         try {

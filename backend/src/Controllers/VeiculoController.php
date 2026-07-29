@@ -16,12 +16,13 @@ class VeiculoController {
         try {
             $repo = new VeiculoRepository();
             $data = $repo->getByMilitarId($id);
-            Response::json($data);
+            Response::json(['dados' => $data], 'Veículos carregados com sucesso.');
         } catch (\Exception $e) {
             error_log("[SISMIL] Erro ao buscar veículos: " . $e->getMessage());
             Response::error('Erro ao buscar dados.', 500);
         }
     }
+
     
     public function save(Request $request) {
         require_login(['admin', 's2', 'sargenteacao']);

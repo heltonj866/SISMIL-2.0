@@ -145,7 +145,7 @@ class MilitarController {
         $id = (int)($dados['id'] ?? 0);
         
         if ($id <= 0) {
-            Response::json(['status' => 'erro', 'msg' => 'ID inválido.']);
+            Response::error('ID inválido.', 400);
             return;
         }
         
@@ -154,13 +154,13 @@ class MilitarController {
             $stmt = $pdo->prepare("UPDATE tb_militares SET status_ativo = 1, data_desligamento = NULL WHERE id = ?");
             if ($stmt->execute([$id])) {
                 \Sismil\Services\AuditLogger::log('REATIVAR_MILITAR', "Militar ID {$id} reativado e reintegrado ao Efetivo Pronto.");
-                Response::json(['status' => 'sucesso', 'msg' => 'Militar reativado e integrado ao Efetivo Pronto.']);
+                Response::json(null, 'Militar reativado e integrado ao Efetivo Pronto.');
             } else {
                 throw new \Exception("Erro ao atualizar o status de reativação.");
             }
         } catch (\Exception $e) {
             error_log('[SISMIL] Erro ao reativar militar: ' . $e->getMessage());
-            Response::json(['status' => 'erro', 'msg' => 'Erro ao reativar militar.']);
+            Response::error('Erro ao reativar militar.', 500);
         }
     }
     public function saveAlteracao(Request $request) {

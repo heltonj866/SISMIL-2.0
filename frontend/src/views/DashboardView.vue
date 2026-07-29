@@ -23,7 +23,7 @@
         <div class="stat-card bg-primary-grad">
           <div class="stat-info">
             <h6>Efetivo Cadastrado</h6>
-            <h2>{{ stats.efetivo }}</h2>
+            <h2>{{ stats.militares }}</h2>
           </div>
         </div>
         <div class="stat-card bg-secondary-grad">
@@ -35,7 +35,7 @@
         <div class="stat-card bg-warning-grad">
           <div class="stat-info">
             <h6 class="text-danger">Aguardando Homologação</h6>
-            <h2 class="text-danger">{{ stats.veiculos_pendentes }}</h2>
+            <h2 class="text-danger">{{ stats.pendentes }}</h2>
           </div>
         </div>
       </div>
@@ -134,11 +134,10 @@ const authStore = useAuthStore()
 const postos = ["Cel", "Ten Cel", "Maj", "Cap", "1º Ten", "2º Ten", "Asp", "Subten", "1º Sgt", "2º Sgt", "3º Sgt", "Cb", "Sd EP", "Sd EV", "SC"]
 
 const stats = ref({
-  efetivo: 0,
+  militares: 0,
   inativos: 0,
-  arranchados_hoje: 0,
   veiculos: 0,
-  veiculos_pendentes: 0
+  pendentes: 0
 })
 
 const searchResults = ref([])
