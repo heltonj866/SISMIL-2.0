@@ -17,7 +17,7 @@ class MilitarService {
     }
 
     public function salvarMilitar(array $dados): int {
-        $id = !empty($dados['id']) ? (int)$dados['id'] : 0;
+        $id = !empty($dados['id']) ? (int)$dados['id'] : (!empty($dados['id_militar']) ? (int)$dados['id_militar'] : 0);
         
         $parametros = [
             ':cpf' => !empty($dados['cpf']) ? $dados['cpf'] : null,
@@ -57,6 +57,23 @@ class MilitarService {
             $militarExistente = $this->repo->findById($id);
             if (!$militarExistente) {
                 throw new Exception("Militar não encontrado para atualização.");
+            }
+        }
+
+        // Validação preventiva de CPF e Identidade duplicados em outro cadastro
+        $pdo = \Sismil\Core\Database::getInstance();
+        if (!empty($parametros[':cpf'])) {
+            $stmtCpf = $pdo->prepare("SELECT id, nome_guerra, posto_grad FROM tb_militares WHERE cpf = ? AND id != ?");
+            $stmtCpf->execute([$parametros[':cpf'], $id]);
+            if ($outro = $stmtCpf->fetch(\PDO::FETCH_ASSOC)) {
+                throw new Exception("O CPF '{$parametros[':cpf']}' já pertence ao militar {$outro['posto_grad']} {$outro['nome_guerra']} (ID #{$outro['id']}).");
+            }
+        }
+        if (!empty($parametros[':idt_militar'])) {
+            $stmtIdt = $pdo->prepare("SELECT id, nome_guerra, posto_grad FROM tb_militares WHERE idt_militar = ? AND id != ?");
+            $stmtIdt->execute([$parametros[':idt_militar'], $id]);
+            if ($outro = $stmtIdt->fetch(\PDO::FETCH_ASSOC)) {
+                throw new Exception("A Identidade '{$parametros[':idt_militar']}' já pertence ao militar {$outro['posto_grad']} {$outro['nome_guerra']} (ID #{$outro['id']}).");
             }
         }
 
