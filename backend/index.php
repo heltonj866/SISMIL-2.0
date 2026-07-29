@@ -64,6 +64,8 @@ $router->post('/api/militar/save', [MilitarController::class, 'save']);
 $router->post('/api/militar/desligar', [MilitarController::class, 'desligar']);
 $router->post('/api/militar/reativar', [MilitarController::class, 'reativar']);
 $router->post('/api/militar/delete', [MilitarController::class, 'delete']);
+$router->post('/api/militar/alteracao/save', [MilitarController::class, 'saveAlteracao']);
+$router->post('/api/militar/alteracao/delete', [MilitarController::class, 'deleteAlteracao']);
 
 // --- VEÍCULO ---
 $router->get('/api/veiculo/list', [VeiculoController::class, 'getByMilitar']);

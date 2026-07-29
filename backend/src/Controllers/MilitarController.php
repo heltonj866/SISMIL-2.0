@@ -13,11 +13,14 @@ use Sismil\Core\AuditLogger;
 class MilitarController {
     
     public function search(Request $request) {
-        require_login();
+        $isPublic = $request->getQuery('publico') == '1';
+        if (!$isPublic) {
+            require_login();
+        }
         
         $filtros = $request->getQuery();
         if (empty($filtros)) {
-            $filtros = ['tipo_busca' => 'geral']; // Padrão
+            $filtros = ['tipo_busca' => 'geral'];
         }
         
         try {
@@ -157,6 +160,38 @@ class MilitarController {
         } catch (\Exception $e) {
             error_log('[SISMIL] Erro ao reativar militar: ' . $e->getMessage());
             Response::json(['status' => 'erro', 'msg' => 'Erro ao reativar militar.']);
+        }
+    }
+    public function saveAlteracao(Request $request) {
+        require_login(['admin', 'sargenteacao']);
+        validate_csrf();
+        
+        try {
+            $repo = new AlteracaoRepository();
+            $repo->save($_POST);
+            \Sismil\Services\AuditLogger::log('SAVE_ALTERACAO', 'Alteração de histórico salva.');
+            Response::json(null, 'Alteração salva com sucesso.');
+        } catch (\Exception $e) {
+            error_log('[SISMIL] Erro ao salvar alteração: ' . $e->getMessage());
+            Response::error('Erro ao salvar alteração.', 500);
+        }
+    }
+
+    public function deleteAlteracao(Request $request) {
+        require_login(['admin', 'sargenteacao']);
+        validate_csrf();
+        
+        try {
+            $id = (int)$request->getBody('id');
+            if ($id <= 0) Response::error('ID inválido', 400);
+            
+            $repo = new AlteracaoRepository();
+            $repo->delete($id);
+            \Sismil\Services\AuditLogger::log('DELETE_ALTERACAO', "Alteração ID {$id} excluída.");
+            Response::json(null, 'Alteração excluída com sucesso.');
+        } catch (\Exception $e) {
+            error_log('[SISMIL] Erro ao excluir alteração: ' . $e->getMessage());
+            Response::error('Erro ao excluir alteração.', 500);
         }
     }
 }
