@@ -207,4 +207,55 @@ class MilitarRepository {
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function insert(array $dados): int {
+        $sql = "INSERT INTO tb_militares (
+            cpf, posto_grad, numero, nome_guerra, subunidade, pelotao, secao, nome_completo,
+            nome_pai, nome_mae, qmg, dt_nascimento, tipo_sanguineo, dt_praca, idt_militar,
+            email, celular_princ, celular_sec, nome_resp, tel_resp, tel_emergencia,
+            cep, endereco, num_residencia, bairro, cidade, estado,
+            cat_cnh, validade_cnh, pdf_habilitacao, foto_path, pdf_nada_consta, status_ativo
+        ) VALUES (
+            :cpf, :posto_grad, :numero, :nome_guerra, :subunidade, :pelotao, :secao, :nome_completo,
+            :nome_pai, :nome_mae, :qmg, :dt_nascimento, :tipo_sanguineo, :dt_praca, :idt_militar,
+            :email, :celular_princ, :celular_sec, :nome_resp, :tel_resp, :tel_emergencia,
+            :cep, :endereco, :num_residencia, :bairro, :cidade, :estado,
+            :cat_cnh, :validade_cnh, :pdf_cnh, :foto, :pdf_nada_consta, 1
+        )";
+        $this->db->prepare($sql)->execute($dados);
+        return (int)$this->db->lastInsertId();
+    }
+
+    public function update(array $dados): void {
+        $setClauses = [];
+        $params = [':id' => $dados[':id']];
+        foreach ($dados as $key => $val) {
+            if ($key === ':id') continue;
+            $colName = ltrim($key, ':');
+            // Mapeamentos específicos do banco vs nome do parâmetro
+            if ($colName === 'foto') $colName = 'foto_path';
+            if ($colName === 'pdf_cnh') $colName = 'pdf_habilitacao';
+
+            $setClauses[] = "$colName = $key";
+            $params[$key] = $val;
+        }
+        
+        $sql = "UPDATE tb_militares SET " . implode(', ', $setClauses) . " WHERE id = :id";
+        $this->db->prepare($sql)->execute($params);
+    }
+
+    public function updateStatus(int $id, int $statusAtivo, ?string $pdfNadaConsta = null): void {
+        $sql = "UPDATE tb_militares SET status_ativo = ?";
+        $params = [$statusAtivo];
+        
+        if ($pdfNadaConsta !== null) {
+            $sql .= ", pdf_nada_consta = ?";
+            $params[] = $pdfNadaConsta;
+        }
+        
+        $sql .= " WHERE id = ?";
+        $params[] = $id;
+        
+        $this->db->prepare($sql)->execute($params);
+    }
 }

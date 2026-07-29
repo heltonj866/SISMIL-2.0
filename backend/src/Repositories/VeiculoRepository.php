@@ -61,4 +61,46 @@ class VeiculoRepository {
         $stmt = $this->db->query($sql);
         return $stmt->fetchAll();
     }
+
+    public function findById(int $id) {
+        $stmt = $this->db->prepare("SELECT * FROM tb_veiculos WHERE id = ?");
+        $stmt->execute([$id]);
+        return $stmt->fetch();
+    }
+
+    public function insert(array $dados): int {
+        $sql = "INSERT INTO tb_veiculos (
+            militar_id, tipo_veiculo, marca, modelo, cor, placa, renavam, chassi, 
+            ano_fabricacao, proprietario, cpf_proprietario, cnh_proprietario, emissao_crlv, validade_crlv, pdf_veiculo
+        ) VALUES (
+            :militar_id, :tipo_veiculo, :marca, :modelo, :cor, :placa, :renavam, :chassi, 
+            :ano_fabricacao, :proprietario, :cpf_proprietario, :cnh_proprietario, :emissao_crlv, :validade_crlv, :pdf_veiculo
+        )";
+        $this->db->prepare($sql)->execute($dados);
+        return (int)$this->db->lastInsertId();
+    }
+
+    public function update(array $dados): void {
+        $setClauses = [];
+        $params = [':id' => $dados[':id']];
+        foreach ($dados as $key => $val) {
+            if ($key === ':id' || $key === ':militar_id') continue; // militar_id não muda
+            $colName = ltrim($key, ':');
+            $setClauses[] = "$colName = $key";
+            $params[$key] = $val;
+        }
+        
+        $sql = "UPDATE tb_veiculos SET " . implode(', ', $setClauses) . " WHERE id = :id";
+        $this->db->prepare($sql)->execute($params);
+    }
+
+    public function updateHomologacao(int $id, int $homologado, string $obs): void {
+        $stmt = $this->db->prepare("UPDATE tb_veiculos SET homologado = ?, observacao_s2 = ? WHERE id = ?");
+        $stmt->execute([$homologado, $obs, $id]);
+    }
+
+    public function delete(int $id): void {
+        $stmt = $this->db->prepare("DELETE FROM tb_veiculos WHERE id = ?");
+        $stmt->execute([$id]);
+    }
 }

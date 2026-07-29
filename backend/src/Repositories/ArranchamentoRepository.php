@@ -51,4 +51,39 @@ class ArranchamentoRepository {
 
         return ['ofSgt' => $ofSgt, 'cbSd' => $cbSd];
     }
+
+    public function salvarLote(string $subunidade, string $posto_grad, string $numero, string $nome_guerra, array $refeicoes): array {
+        $stmtCheck = $this->db->prepare("SELECT id FROM tb_arranchamento WHERE data_refeicao = ? AND subunidade = ? AND posto_grad = ? AND nome_guerra = ?");
+        $stmtUpdate = $this->db->prepare("UPDATE tb_arranchamento SET cafe = ?, almoco = ?, numero = ? WHERE id = ?");
+        $stmtInsert = $this->db->prepare("INSERT INTO tb_arranchamento (data_refeicao, subunidade, posto_grad, numero, nome_guerra, cafe, almoco) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        
+        $datasArranchadas = [];
+        
+        try {
+            $this->db->beginTransaction();
+            
+            foreach ($refeicoes as $ref) {
+                $data   = $ref['data'];
+                $cafe   = (int)$ref['cafe'];
+                $almoco = (int)$ref['almoco'];
+                
+                $datasArranchadas[] = $data;
+
+                $stmtCheck->execute([$data, $subunidade, $posto_grad, $nome_guerra]);
+                $row = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+                
+                if ($row) {
+                    $stmtUpdate->execute([$cafe, $almoco, $numero, $row['id']]);
+                } else {
+                    $stmtInsert->execute([$data, $subunidade, $posto_grad, $numero, $nome_guerra, $cafe, $almoco]);
+                }
+            }
+            
+            $this->db->commit();
+            return $datasArranchadas;
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
 }

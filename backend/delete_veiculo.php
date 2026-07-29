@@ -1,9 +1,9 @@
 <?php
-// ARQUIVO: backend/homologar_veiculo.php
+// ARQUIVO: backend/delete_veiculo.php
 require_once __DIR__ . '/security.php';
 session_start();
 apply_cors();
-require_login(['admin', 's2']); 
+require_login(['admin', 's2', 'sargenteacao']); 
 
 require_once __DIR__ . '/src/Core/Response.php';
 require_once __DIR__ . '/src/Repositories/VeiculoRepository.php';
@@ -21,15 +21,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 validate_csrf();
 
 $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-$homologado = isset($_POST['homologado']) ? (int)$_POST['homologado'] : 0;
-$obs = $_POST['observacao_s2'] ?? '';
 
 try {
     $service = new VeiculoService();
-    $service->homologarVeiculo($id, $homologado, $obs);
+    $service->excluirVeiculo($id);
     
-    Response::json(200, "Status do veículo atualizado com sucesso.");
+    Response::json(200, "Veículo excluído com sucesso.");
 } catch (\Exception $e) {
-    error_log("[SISMIL] Erro ao homologar veículo: " . $e->getMessage());
-    Response::json(500, "Erro ao homologar veículo: " . $e->getMessage());
+    error_log("[SISMIL] Erro ao excluir veículo: " . $e->getMessage());
+    Response::json(500, "Erro ao excluir veículo: " . $e->getMessage());
 }
