@@ -125,7 +125,7 @@ const handleSearch = async () => {
   termoUsado.value = termo.value.trim()
 
   try {
-    const req = await fetch(`/sismil/backend/public_search.php?termo=${encodeURIComponent(termoUsado.value)}`)
+    const req = await fetch(`/sismil/backend/api/militar/search?termo=${encodeURIComponent(termoUsado.value)}&publico=1`)
     const json = await req.json()
 
     if (json.status === 'erro' && json.msg && !json.dados) {

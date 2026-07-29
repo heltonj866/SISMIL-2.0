@@ -61,7 +61,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useAuthStore } from '../stores/auth'
+import { apiFetch } from '../utils/api.js'
 import { useToast } from '../composables/useToast'
 const { error: toastError } = useToast()
 
@@ -85,17 +87,12 @@ const handleHomologate = async (status) => {
     fd.append('id_militar', props.militar.id)
     fd.append('homologado', status)
     
-    // Supondo que a mesma rota de salvar militar ou uma rota específica seja usada
-    // Como estamos apenas atualizando um campo específico do S2, pode ser que precise de um endpoint dedicado
-    // Para simplificar, enviaremos para uma rota fictícia homologar_veiculo.php ou passamos pra save_militar.
-    
-    const res = await fetch('/sismil/backend/homologar_veiculo.php', {
+    const res = await apiFetch('/sismil/backend/api/veiculo/homologar', {
       method: 'POST',
       body: fd
     })
     
-    // Mesmo que o backend não tenha esse arquivo ainda, preparamos o frontend
-    const json = await res.json().catch(() => ({ status: 'erro', msg: 'Endpoint não implementado no backend ainda.' }))
+    const json = await res.json().catch(() => ({ status: 'erro', msg: 'Erro ao processar resposta.' }))
     
     if(json.status === 'sucesso') {
       emit('updated')

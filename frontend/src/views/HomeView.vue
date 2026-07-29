@@ -243,10 +243,11 @@ const nomeCNH = (cat) => {
 
 const goTo = (name, query = {}) => router.push({ name, query })
 
+import { DashboardService } from '../services/DashboardService.js'
+
 const fetchStats = async () => {
   try {
-    const res  = await fetch('/sismil/backend/dashboard_stats.php')
-    const json = await res.json()
+    const json = await DashboardService.getStats()
     if (json.status === 'sucesso') {
       stats.value.militares  = json.militares  ?? 0
       stats.value.inativos   = json.inativos   ?? 0

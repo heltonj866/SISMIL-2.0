@@ -64,7 +64,7 @@ export const MilitarService = {
   },
 
   async saveHistorico(formData) {
-    return apiFetchJson('/sismil/backend/save_alteracao.php', {
+    return apiFetchJson('/sismil/backend/api/militar/alteracao/save', {
       method: 'POST',
       body: formData
     })
@@ -73,7 +73,7 @@ export const MilitarService = {
   async deleteHistorico(id) {
     const fd = new FormData()
     fd.append('id', id)
-    return apiFetchJson('/sismil/backend/excluir_alteracao.php', {
+    return apiFetchJson('/sismil/backend/api/militar/alteracao/delete', {
       method: 'POST',
       body: fd
     })
