@@ -13,7 +13,12 @@ class Request {
     
     public function __construct() {
         $this->method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-        $this->uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
+        $uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
+        $base_path = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
+        if ($base_path !== '/' && strpos($uri, $base_path) === 0) {
+            $uri = substr($uri, strlen($base_path));
+        }
+        $this->uri = $uri ?: '/';
         
         // Sanitiza $_GET
         foreach ($_GET as $key => $value) {
