@@ -1,52 +1,52 @@
 <?php
-// ARQUIVO: backend/get_militar.php
-header('Content-Type: application/json; charset=utf-8');
+/**
+ * ARQUIVO: backend/get_militar.php
+ * Controller de leitura de um militar específico.
+ */
+
+require_once __DIR__ . '/src/Core/Response.php';
+require_once __DIR__ . '/src/Repositories/MilitarRepository.php';
+require_once __DIR__ . '/security.php';
+
+use Sismil\Core\Response;
+use Sismil\Repositories\MilitarRepository;
+
 header('Cache-Control: no-cache, no-store, must-revalidate');
 header('Pragma: no-cache');
 header('Expires: 0');
 
-require_once __DIR__ . '/security.php';
 session_start();
 apply_cors();
-require_login(); // Qualquer usuário autenticado
-require 'db_connect.php';
+require_login(); 
 
-$id = $_GET['id'] ?? '';
+$id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
 
-if(empty($id)) {
-    echo json_encode(['status' => 'erro', 'msg' => 'ID não informado']);
-    exit;
+if (!$id) {
+    Response::error('ID inválido ou não informado.', 400);
 }
 
 try {
-    $sql = "SELECT * FROM tb_militares WHERE id = ?";
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([$id]);
-    $dados = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (ob_get_length()) ob_clean(); // Limpa sujeira do buffer
+    $repo = new MilitarRepository();
+    $dados = $repo->findById($id);
 
     if ($dados) {
-        // Converte NULL em VAZIO para não quebrar o Javascript
+        // Converte NULL em VAZIO para não quebrar componentes Frontend
         foreach ($dados as $key => $value) {
-            if (is_null($value)) $dados[$key] = "";
+            if (is_null($value)) {
+                $dados[$key] = "";
+            }
         }
         
-        // Remove campos sensíveis para usuários comuns
+        // Regra de Negócio: Usuários sem privilégios não veem dados sensíveis (Privacidade)
         if (isset($_SESSION['usuario_role']) && $_SESSION['usuario_role'] === 'user') {
-            unset($dados['cpf']);
-            unset($dados['nome_pai']);
-            unset($dados['nome_mae']);
-            unset($dados['celular_sec']);
-            unset($dados['tel_emergencia']);
+            unset($dados['cpf'], $dados['nome_pai'], $dados['nome_mae'], $dados['celular_sec'], $dados['tel_emergencia']);
         }
         
-        echo json_encode(['status' => 'sucesso', 'dados' => $dados]);
+        Response::json(['dados' => $dados]);
     } else {
-        echo json_encode(['status' => 'erro', 'msg' => 'Militar não encontrado no banco.']);
+        Response::error('Militar não encontrado no banco de dados.', 404);
     }
-
-} catch (PDOException $e) {
-    send_error("Erro ao buscar dados do militar.", $e->getMessage());
+} catch (\Exception $e) {
+    error_log('[SISMIL] Erro no get_militar: ' . $e->getMessage());
+    Response::error('Erro ao buscar dados do militar.', 500);
 }
-?>
