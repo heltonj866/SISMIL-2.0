@@ -28,11 +28,12 @@ class Response {
         ];
         
         if ($data !== null) {
-            // Se $data for um array associativo sem a chave 'dados', mesclamos para retrocompatibilidade onde o frontend espera a chave no root ou 'dados'
-            if (is_array($data) && !isset($data['dados']) && !isset($data['data'])) {
+            // Mescla os dados no array de resposta para garantir que chaves como 'dados'
+            // fiquem na raiz do JSON (retrocompatibilidade com frontend antigo).
+            if (is_array($data)) {
                 $response = array_merge($response, $data);
             }
-            $response['data'] = $data;
+            $response['data'] = $data; // Mantém a nova padronização também
         }
 
         echo json_encode($response);
