@@ -28,12 +28,13 @@ class Response {
         ];
         
         if ($data !== null) {
-            // Mescla os dados no array de resposta para garantir que chaves como 'dados'
+            // Mescla os dados no array de resposta para garantir que chaves como 'dados' ou 'data'
             // fiquem na raiz do JSON (retrocompatibilidade com frontend antigo).
             if (is_array($data)) {
                 $response = array_merge($response, $data);
+            } else {
+                $response['data'] = $data;
             }
-            $response['data'] = $data; // Mantém a nova padronização também
         }
 
         echo json_encode($response);
