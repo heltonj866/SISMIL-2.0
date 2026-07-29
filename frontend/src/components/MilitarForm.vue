@@ -181,8 +181,13 @@
           <div class="form-grid basic-grid">
             <div class="input-group">
               <label>CEP</label>
-              <input type="text" v-model="form.cep" class="input-modern" :disabled="isReadonly"
-                placeholder="00000-000" @input="onCepInput" maxlength="9">
+              <div style="display: flex; gap: 0.4rem;">
+                <input type="text" v-model="form.cep" class="input-modern" :disabled="isReadonly"
+                  placeholder="00000-000" @input="onCepInput" maxlength="9">
+                <button type="button" class="btn-modern btn-secondary" style="padding: 0.4rem 0.6rem;" :disabled="isReadonly" @click="buscarCep(true)" title="Buscar Endereço pelo CEP">
+                  <i class="fas fa-search"></i>
+                </button>
+              </div>
             </div>
             <div class="input-group" style="grid-column: span 3;">
               <label>Logradouro</label>
@@ -531,33 +536,48 @@ const mascaraTel = (e, field) => {
   form.value[field] = v
 }
 
-const onCepInput = async (e) => {
+const buscarCep = async (manual = false) => {
+  const v = form.value.cep ? form.value.cep.replace(/\D/g, '') : ''
+  if (v.length !== 8) {
+    if (manual) toastWarning('Digite um CEP válido com 8 dígitos.')
+    return
+  }
+  
+  try {
+    let json = null
+    try {
+      const res = await apiFetch(`/sismil/backend/api/cep?cep=${v}`)
+      const data = await res.json()
+      if (data.status === 'sucesso' && data.dados) {
+        json = data.dados
+      }
+    } catch (err) {}
+
+    if (!json) {
+      const res = await fetch(`https://viacep.com.br/ws/${v}/json/`)
+      json = await res.json()
+    }
+
+    if (json && !json.erro) {
+      form.value.endereco = json.logradouro || form.value.endereco
+      form.value.bairro = json.bairro || form.value.bairro
+      form.value.cidade = json.localidade || form.value.cidade
+      form.value.estado = json.uf || form.value.estado
+      if (manual) toastSuccess('Endereço preenchido com sucesso!')
+    } else {
+      if (manual) toastWarning('CEP não encontrado. Preencha o endereço manualmente.')
+    }
+  } catch (err) {
+    console.error('Erro na consulta do CEP:', err)
+    if (manual) toastWarning('Não foi possível consultar o CEP. Preencha o endereço manualmente.')
+  }
+}
+
+const onCepInput = (e) => {
   let v = e.target.value.replace(/\D/g, '').substring(0, 8)
   form.value.cep = v.replace(/^(\d{5})(\d)/, '$1-$2')
-  
   if (v.length === 8) {
-    try {
-      let json = null
-      try {
-        const res = await apiFetch(`/sismil/backend/api/cep?cep=${v}`)
-        const data = await res.json()
-        if (data.status === 'sucesso' && data.dados) {
-          json = data.dados
-        }
-      } catch (err) {}
-
-      if (!json) {
-        const res = await fetch(`https://viacep.com.br/ws/${v}/json/`)
-        json = await res.json()
-      }
-
-      if (json && !json.erro) {
-        form.value.endereco = json.logradouro || form.value.endereco
-        form.value.bairro = json.bairro || form.value.bairro
-        form.value.cidade = json.localidade || form.value.cidade
-        form.value.estado = json.uf || form.value.estado
-      }
-    } catch (err) { console.error('Erro na consulta do CEP:', err) }
+    buscarCep(false)
   }
 }
 
