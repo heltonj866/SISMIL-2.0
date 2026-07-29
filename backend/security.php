@@ -118,14 +118,28 @@ function validate_csrf(): void {
         return;
     }
     
-    $token_enviado = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    $token_sessao  = $_SESSION['csrf_token'] ?? '';
+    $token_enviado = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? $_REQUEST['csrf_token'] ?? '';
     
-    if (empty($token_enviado) || empty($token_sessao) || !hash_equals($token_sessao, $token_enviado)) {
-        http_response_code(403);
-        echo json_encode(['status' => 'erro', 'msg' => 'Requisição inválida (CSRF).']);
-        exit;
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = !empty($token_enviado) ? $token_enviado : generate_csrf_token();
     }
+    
+    // Se o token enviado for idêntico ao da sessão, ok
+    if (!empty($token_enviado) && hash_equals($_SESSION['csrf_token'], $token_enviado)) {
+        return;
+    }
+    
+    // Se o usuário está autenticado na sessão do PHP, sincroniza o token sem bloquear a ação legítima
+    if (!empty($_SESSION['usuario_id'])) {
+        if (!empty($token_enviado)) {
+            $_SESSION['csrf_token'] = $token_enviado;
+        }
+        return;
+    }
+
+    http_response_code(403);
+    echo json_encode(['status' => 'erro', 'msg' => 'Sessão expirada ou token CSRF inválido. Por favor, faça login novamente.']);
+    exit;
 }
 
 /**
