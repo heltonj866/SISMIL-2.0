@@ -1,0 +1,1 @@
+import{t as e}from"./api-D_0Dn3TK.js";var t={async login(t,n){let r=new FormData;return r.append(`username`,t),r.append(`password`,n),e(`/sismil/backend/api/auth/login`,{method:`POST`,body:r})},async logout(){return e(`/sismil/backend/api/auth/logout`,{method:`POST`})},async check(){return e(`/sismil/backend/api/auth/check`)}};export{t as AuthService};
