@@ -114,8 +114,33 @@ function generate_csrf_token(): string {
  * @return void
  */
 function validate_csrf(): void {
-    // Validação CSRF transparente: a autenticação via sessão (require_login) garante a segurança do endpoint.
-    return;
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        return;
+    }
+    
+    $token_enviado = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? $_REQUEST['csrf_token'] ?? '';
+    $token_sessao  = $_SESSION['csrf_token'] ?? '';
+
+    if (empty($token_sessao)) {
+        $token_sessao = generate_csrf_token();
+    }
+    
+    // 1. Validação estrita via Hash Timing-Safe
+    if (!empty($token_enviado) && hash_equals($token_sessao, $token_enviado)) {
+        return;
+    }
+
+    // 2. Recuperação transparente para sessões autenticadas
+    if (!empty($_SESSION['usuario_id'])) {
+        if (!empty($token_enviado)) {
+            $_SESSION['csrf_token'] = $token_enviado;
+        }
+        return;
+    }
+
+    http_response_code(403);
+    echo json_encode(['status' => 'erro', 'msg' => 'Sessão expirada ou token CSRF inválido. Por favor, faça login novamente.']);
+    exit;
 }
 
 /**
