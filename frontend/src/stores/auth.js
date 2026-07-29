@@ -40,7 +40,7 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem('sismil_role')
       localStorage.removeItem('sismil_idt')
       
-      import('@/services/AuthService').then(module => {
+      import('../services/AuthService.js').then(module => {
         module.AuthService.logout().catch(() => {})
       })
     }

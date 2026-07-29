@@ -54,6 +54,8 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
+import { AuthService } from '../services/AuthService.js'
+
 const cpf = ref('')
 const senha = ref('')
 const errorMessage = ref('')
@@ -73,20 +75,14 @@ const handleLogin = async () => {
   errorMessage.value = ''
   
   try {
-    const res = await fetch('/sismil/backend/login.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include', // Garante envio do cookie de sessão
-      body: JSON.stringify({ identidade: cpf.value, senha: senha.value })
-    })
+    const data = await AuthService.login(cpf.value, senha.value)
     
-    const data = await res.json()
     if (data.status === 'sucesso') {
       // Armazena role, identidade E token CSRF retornado pelo servidor
       authStore.setSession(data.role, cpf.value, data.csrf_token)
       router.push({ name: 'dashboard' })
     } else {
-      errorMessage.value = data.msg || 'Erro ao realizar login.'
+      errorMessage.value = data.msg || data.message || 'Erro ao realizar login.'
     }
   } catch (err) {
     errorMessage.value = 'Erro de conexão com o servidor.'

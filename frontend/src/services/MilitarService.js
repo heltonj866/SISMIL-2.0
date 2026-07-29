@@ -1,4 +1,4 @@
-import { apiFetchJson, apiFetch } from '@/utils/api'
+import { apiFetchJson, apiFetch } from '../utils/api.js'
 
 export const MilitarService = {
   /**

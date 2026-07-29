@@ -1,4 +1,4 @@
-import { apiFetchJson } from '@/utils/api'
+import { apiFetchJson } from '../utils/api.js'
 
 export const VeiculoService = {
   /**
