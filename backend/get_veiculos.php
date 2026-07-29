@@ -1,24 +1,30 @@
 <?php
-// ARQUIVO: backend/get_veiculos.php
-header('Content-Type: application/json; charset=utf-8');
+/**
+ * ARQUIVO: backend/get_veiculos.php
+ * Controller de leitura dos veículos de um militar.
+ */
+
 require_once __DIR__ . '/security.php';
+require_once __DIR__ . '/src/Core/Response.php';
+
+use Sismil\Core\Response;
+use Sismil\Repositories\VeiculoRepository;
+
 session_start();
 apply_cors();
-require_login(); // Qualquer usuário autenticado
-require 'db_connect.php';
+require_login(); 
 
-$militar_id = $_GET['militar_id'] ?? '';
-if (empty($militar_id)) {
-    echo json_encode(['status' => 'erro', 'msg' => 'Militar ID não informado.']);
-    exit;
+$militar_id = filter_var($_GET['militar_id'] ?? null, FILTER_VALIDATE_INT);
+
+if (!$militar_id) {
+    Response::error('Militar ID não informado ou inválido.', 400);
 }
 
 try {
-    $stmt = $pdo->prepare("SELECT * FROM tb_veiculos WHERE militar_id = ? ORDER BY id DESC");
-    $stmt->execute([$militar_id]);
-    $veiculos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $repo = new VeiculoRepository();
+    $veiculos = $repo->getByMilitarId($militar_id);
 
-    // Remove a observação do S2 para usuários comuns
+    // Regra de Privacidade (S2)
     if ($_SESSION['usuario_role'] === 'user') {
         foreach ($veiculos as &$v) {
             unset($v['observacao_s2']);
@@ -26,8 +32,8 @@ try {
         unset($v);
     }
 
-    echo json_encode(['status' => 'sucesso', 'dados' => $veiculos]);
-} catch (Exception $e) {
-    send_error("Erro ao carregar veículos.", $e->getMessage());
+    Response::json(['dados' => $veiculos]);
+} catch (\Exception $e) {
+    error_log('[SISMIL] Erro ao carregar veiculos: ' . $e->getMessage());
+    Response::error('Erro ao carregar veículos.', 500);
 }
-?>

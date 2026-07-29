@@ -1,20 +1,35 @@
 <?php
-// ARQUIVO: backend/dashboard_stats.php
-header('Content-Type: application/json; charset=utf-8');
+/**
+ * ARQUIVO: backend/dashboard_stats.php
+ * Controller de métricas consolidadas para o Dashboard.
+ */
+
 require_once __DIR__ . '/security.php';
+require_once __DIR__ . '/src/Core/Response.php';
+require_once __DIR__ . '/src/Core/Database.php'; // Adicionado temporariamente para as queries ad-hoc
+require_once __DIR__ . '/src/Repositories/MilitarRepository.php';
+require_once __DIR__ . '/src/Repositories/VeiculoRepository.php';
+
+use Sismil\Core\Response;
+use Sismil\Core\Database;
+use Sismil\Repositories\MilitarRepository;
+use Sismil\Repositories\VeiculoRepository;
+
 session_start();
 apply_cors();
-require_login(); // Qualquer usuário autenticado
-require 'db_connect.php';
+require_login(); 
 
 try {
-    // Contagens básicas
-    $militares  = $pdo->query("SELECT COUNT(*) FROM tb_militares WHERE status_ativo = 1")->fetchColumn();
-    $inativos   = $pdo->query("SELECT COUNT(*) FROM tb_militares WHERE status_ativo = 0")->fetchColumn();
-    $veiculos   = $pdo->query("SELECT COUNT(*) FROM tb_veiculos")->fetchColumn();
-    $pendentes  = $pdo->query("SELECT COUNT(*) FROM tb_veiculos WHERE homologado = 0")->fetchColumn();
-    $homologados= $pdo->query("SELECT COUNT(*) FROM tb_veiculos WHERE homologado = 1")->fetchColumn();
-    $com_cnh    = $pdo->query("SELECT COUNT(*) FROM tb_militares WHERE status_ativo=1 AND cat_cnh IS NOT NULL AND cat_cnh != ''")->fetchColumn();
+    $pdo = Database::getInstance();
+    $repoVeiculos = new VeiculoRepository();
+
+    // Contagens Básicas
+    $militares = (int)$pdo->query("SELECT COUNT(*) FROM tb_militares WHERE status_ativo = 1")->fetchColumn();
+    $inativos = (int)$pdo->query("SELECT COUNT(*) FROM tb_militares WHERE status_ativo = 0")->fetchColumn();
+    $veiculos = $repoVeiculos->getEstatistica('total');
+    $pendentes = $repoVeiculos->getEstatistica('pendentes');
+    $homologados = $repoVeiculos->getEstatistica('homologados');
+    $com_cnh = (int)$pdo->query("SELECT COUNT(*) FROM tb_militares WHERE status_ativo=1 AND cat_cnh IS NOT NULL AND cat_cnh != ''")->fetchColumn();
 
     // Efetivo por Subunidade e Posto
     $sqlEf = "SELECT subunidade, posto_grad, COUNT(*) as qtd
@@ -28,47 +43,40 @@ try {
                     WHEN '1º Sgt' THEN 12 WHEN '2º Sgt' THEN 13 WHEN '3º Sgt' THEN 14
                     WHEN 'Cb' THEN 15 WHEN 'Sd EP' THEN 16 WHEN 'Sd EV' THEN 17
                     WHEN 'Sd' THEN 18 WHEN 'SC' THEN 99 ELSE 100 END ASC";
-    $efetivo_raw = $pdo->query($sqlEf)->fetchAll(PDO::FETCH_ASSOC);
-
+    
+    $efetivo_raw = $pdo->query($sqlEf)->fetchAll();
+    
     $efetivo_su = [];
     foreach ($efetivo_raw as $row) {
         $su = $row['subunidade'] ?: 'Sem SU';
-        if (!isset($efetivo_su[$su])) $efetivo_su[$su] = ['total' => 0, 'detalhes' => []];
+        if (!isset($efetivo_su[$su])) {
+            $efetivo_su[$su] = ['total' => 0, 'detalhes' => []];
+        }
         $efetivo_su[$su]['total'] += $row['qtd'];
         $efetivo_su[$su]['detalhes'][] = ['posto' => $row['posto_grad'], 'qtd' => $row['qtd']];
     }
 
-    // Veículos pendentes com dados do militar
-    $sqlPend = "SELECT v.id, v.placa, v.modelo, v.cor, v.observacao_s2,
-                       m.posto_grad, m.nome_guerra
-                FROM tb_veiculos v
-                JOIN tb_militares m ON v.militar_id = m.id
-                WHERE v.homologado = 0
-                ORDER BY v.id DESC
-                LIMIT 20";
-    $veiculos_pendentes = $pdo->query($sqlPend)->fetchAll(PDO::FETCH_ASSOC);
+    $veiculos_pendentes = $repoVeiculos->getPendentes();
 
-    // CNH por Categoria
     $sqlCnh = "SELECT cat_cnh as cat, COUNT(*) as qtd
                FROM tb_militares
                WHERE status_ativo=1 AND cat_cnh IS NOT NULL AND cat_cnh != ''
                GROUP BY cat_cnh ORDER BY qtd DESC";
-    $cnh_cats = $pdo->query($sqlCnh)->fetchAll(PDO::FETCH_ASSOC);
+    $cnh_cats = $pdo->query($sqlCnh)->fetchAll();
 
-    echo json_encode([
-        'status'            => 'sucesso',
-        'militares'         => (int)$militares,
-        'inativos'          => (int)$inativos,
-        'veiculos'          => (int)$veiculos,
-        'pendentes'         => (int)$pendentes,
-        'homologados'       => (int)$homologados,
-        'com_cnh'           => (int)$com_cnh,
+    Response::json([
+        'militares'         => $militares,
+        'inativos'          => $inativos,
+        'veiculos'          => $veiculos,
+        'pendentes'         => $pendentes,
+        'homologados'       => $homologados,
+        'com_cnh'           => $com_cnh,
         'efetivo_su'        => $efetivo_su,
         'veiculos_pendentes'=> $veiculos_pendentes,
         'cnh_cats'          => $cnh_cats,
     ]);
 
-} catch (PDOException $e) {
-    send_error("Erro ao carregar estatísticas do dashboard.", $e->getMessage());
+} catch (\Exception $e) {
+    error_log('[SISMIL] Erro ao carregar stats do dashboard: ' . $e->getMessage());
+    Response::error('Erro ao carregar estatísticas do dashboard.', 500);
 }
-?>

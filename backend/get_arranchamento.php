@@ -1,27 +1,32 @@
 <?php
-// ARQUIVO: backend/get_arranchamento.php
-header('Content-Type: application/json; charset=utf-8');
+/**
+ * ARQUIVO: backend/get_arranchamento.php
+ * Controller de leitura dos arranchamentos por data.
+ */
+
 require_once __DIR__ . '/security.php';
+require_once __DIR__ . '/src/Core/Response.php';
+
+use Sismil\Core\Response;
+use Sismil\Repositories\ArranchamentoRepository;
+
 session_start();
 apply_cors();
 require_login(['admin', 'enc_mat']);
-require 'db_connect.php';
 
 $data = $_GET['data'] ?? date('Y-m-d');
 $role = $_SESSION['usuario_role'];
 $sub = $_SESSION['usuario_sub'] ?? '';
 
 try {
-    if ($role === 'enc_mat' && !empty($sub)) {
-        $stmt = $pdo->prepare("SELECT * FROM tb_arranchamento WHERE data_refeicao = ? AND subunidade = ? ORDER BY id ASC");
-        $stmt->execute([$data, $sub]);
-    } else {
-        $stmt = $pdo->prepare("SELECT * FROM tb_arranchamento WHERE data_refeicao = ? ORDER BY id ASC");
-        $stmt->execute([$data]);
-    }
-    $registros = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $repo = new ArranchamentoRepository();
     
-    // Calcula totais
+    if ($role === 'enc_mat' && !empty($sub)) {
+        $registros = $repo->getByDataAndSubunidade($data, $sub);
+    } else {
+        $registros = $repo->getByDataAndSubunidade($data);
+    }
+    
     $total_cafe = 0;
     $total_almoco = 0;
     
@@ -30,8 +35,7 @@ try {
         if ($r['almoco']) $total_almoco++;
     }
     
-    echo json_encode([
-        'status' => 'sucesso',
+    Response::json([
         'data' => $data,
         'totais' => [
             'cafe' => $total_cafe,
@@ -39,7 +43,7 @@ try {
         ],
         'registros' => $registros
     ]);
-} catch (Exception $e) {
-    send_error("Erro ao carregar dados de arranchamento.", $e->getMessage());
+} catch (\Exception $e) {
+    error_log('[SISMIL] Erro ao carregar arranchamento: ' . $e->getMessage());
+    Response::error('Erro ao carregar dados de arranchamento.', 500);
 }
-?>

@@ -3,33 +3,33 @@
 require_once __DIR__ . '/security.php';
 session_start();
 require_login(); // Apenas usuários autenticados
-require 'db_connect.php';
+require_once __DIR__ . '/src/Repositories/MilitarRepository.php';
+require_once __DIR__ . '/src/Repositories/VeiculoRepository.php';
+require_once __DIR__ . '/src/Repositories/AlteracaoRepository.php';
 
-$id = $_GET['id'] ?? null;
+use Sismil\Repositories\MilitarRepository;
+use Sismil\Repositories\VeiculoRepository;
+use Sismil\Repositories\AlteracaoRepository;
+
+$id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
 if (!$id) {
     die("ID do militar não informado.");
 }
 
 try {
-    // 1. Busca os Dados do Militar
-    $stmt = $pdo->prepare("SELECT * FROM tb_militares WHERE id = ?");
-    $stmt->execute([$id]);
-    $m = $stmt->fetch(PDO::FETCH_ASSOC);
+    $repoMilitar = new MilitarRepository();
+    $repoVeiculo = new VeiculoRepository();
+    $repoAlteracao = new AlteracaoRepository();
+
+    $m = $repoMilitar->findById($id);
     if (!$m) {
         die("Militar não encontrado.");
     }
 
-    // 2. Busca os Veículos
-    $stmtV = $pdo->prepare("SELECT * FROM tb_veiculos WHERE militar_id = ? ORDER BY id DESC");
-    $stmtV->execute([$id]);
-    $veiculos = $stmtV->fetchAll(PDO::FETCH_ASSOC);
+    $veiculos = $repoVeiculo->getByMilitarId($id);
+    $historico = $repoAlteracao->getByMilitarId($id);
 
-    // 3. Busca o Histórico de Alterações (S1)
-    $stmtH = $pdo->prepare("SELECT * FROM tb_alteracoes WHERE militar_id = ? ORDER BY data_fato DESC");
-    $stmtH->execute([$id]);
-    $historico = $stmtH->fetchAll(PDO::FETCH_ASSOC);
-
-} catch (PDOException $e) {
+} catch (\Exception $e) {
     error_log("[SISMIL] Erro ao carregar dossier: " . $e->getMessage());
     die("Ocorreu um erro interno ao carregar o dossier militar.");
 }

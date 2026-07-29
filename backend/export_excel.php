@@ -3,7 +3,9 @@
 require_once __DIR__ . '/security.php';
 session_start();
 require_login(); // Qualquer usuário autenticado
-require 'db_connect.php';
+require_once __DIR__ . '/src/Repositories/MilitarRepository.php';
+
+use Sismil\Repositories\MilitarRepository;
 
 $arquivo = 'relatorio_efetivo_' . date('d-m-Y') . '.xls';
 
@@ -13,61 +15,13 @@ header("Pragma: no-cache");
 header("Expires: 0");
 
 try {
-    $tipo = $_GET['tipo_busca'] ?? 'geral';
-    $inativos = isset($_GET['inativos']) && $_GET['inativos'] == '1';
-    $params = [];
-    $sql = "SELECT * FROM tb_militares WHERE 1=1";
-    if (!$inativos) {
-        $sql .= " AND status_ativo = 1";
-    }
+    $repo = new MilitarRepository();
+    
+    // As variáveis $_GET são passadas para o Repositório, juntamente com o Role da sessão
+    $roleSessao = $_SESSION['usuario_role'] ?? '';
+    $lista = $repo->getExportRelatorio($_GET, $roleSessao);
 
-    // Lógica de Filtros
-    if ($tipo === 'geral') {
-        $termo = $_GET['termo'] ?? '';
-        $posto = $_GET['posto'] ?? '';
-        $su    = $_GET['su'] ?? '';
-        $qmg   = $_GET['qmg'] ?? '';
-        $sem_foto = isset($_GET['sem_foto']) && $_GET['sem_foto'] == '1';
-        $mes_aniversario = $_GET['mes_aniversario'] ?? '';
-
-        if (!empty($termo)) {
-            $t = "%" . trim($termo) . "%";
-            $sql .= " AND (nome_guerra LIKE :t1 OR nome_completo LIKE :t2 OR numero LIKE :t3)";
-            $params[':t1'] = $t; $params[':t2'] = $t; $params[':t3'] = $t;
-        }
-        if (!empty($posto)) { $sql .= " AND posto_grad = :posto"; $params[':posto'] = $posto; }
-        if (!empty($su)) { $sql .= " AND subunidade = :su"; $params[':su'] = $su; }
-        if (!empty($qmg)) { $sql .= " AND qmg = :qmg"; $params[':qmg'] = $qmg; }
-
-        if ($sem_foto) {
-            $role_sessao = strtolower(trim($_SESSION['usuario_role'] ?? ''));
-            if (in_array($role_sessao, ['admin', 'sargenteacao'])) {
-                $sql .= " AND (foto_path IS NULL OR foto_path = '' OR foto_path = 'sem_foto.png' OR foto_path = 'sem_foto.PNG')";
-            }
-        }
-        if (!empty($mes_aniversario) && is_numeric($mes_aniversario) && $mes_aniversario >= 1 && $mes_aniversario <= 12) {
-            $sql .= " AND MONTH(dt_nascimento) = :mes_aniversario";
-            $params[':mes_aniversario'] = (int)$mes_aniversario;
-        }
-    } 
-    else if ($tipo === 'cnh') {
-        $filtro = $_GET['filtro_cnh'] ?? 'TODAS';
-        $sql .= " AND cat_cnh IS NOT NULL AND cat_cnh != ''"; // Usando o nome correto
-        
-        if ($filtro === 'PENDENTE') $sql .= " AND (homologado IS NULL OR homologado = 0)";
-        elseif ($filtro === 'VEICULOS') $sql .= " AND placa IS NOT NULL AND placa != ''";
-        elseif ($filtro === 'A') $sql .= " AND cat_cnh LIKE '%A%'";
-        elseif ($filtro === 'B') $sql .= " AND cat_cnh LIKE '%B%'";
-        elseif ($filtro === 'PRO') $sql .= " AND (cat_cnh LIKE '%C%' OR cat_cnh LIKE '%D%' OR cat_cnh LIKE '%E%' OR cat_cnh LIKE '%AD%' OR cat_cnh LIKE '%AE%')";
-    }
-
-    $sql .= " ORDER BY nome_guerra ASC";
-
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    $lista = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-} catch (Exception $e) {
+} catch (\Exception $e) {
     error_log('[SISMIL] export_excel.php: ' . $e->getMessage());
     echo "Erro ao gerar relatório.";
     exit;

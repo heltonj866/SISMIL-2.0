@@ -3,25 +3,22 @@
 require_once __DIR__ . '/security.php';
 session_start();
 require_login(['admin', 's2']); // Apenas admin ou s2 podem emitir selo
-require 'db_connect.php';
+require_once __DIR__ . '/src/Repositories/VeiculoRepository.php';
 
-// Recebemos o veiculo_id enviado pelo novo script.js
-$veiculo_id = $_GET['veiculo_id'] ?? null; 
+use Sismil\Repositories\VeiculoRepository;
+
+$veiculo_id = filter_var($_GET['veiculo_id'] ?? null, FILTER_VALIDATE_INT); 
 
 if (!$veiculo_id) {
     die("ID do veículo não fornecido.");
 }
 
 try {
-    // JOIN entre veículos e militares para buscar os dados corretamente na nova estrutura
-    $sql = "SELECT v.*, m.posto_grad, m.nome_guerra, m.numero, m.celular_princ 
-            FROM tb_veiculos v 
-            JOIN tb_militares m ON v.militar_id = m.id 
-            WHERE v.id = ?";
-            
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([$veiculo_id]);
-    $m = $stmt->fetch(PDO::FETCH_ASSOC);
+    $repo = new VeiculoRepository();
+    // A query antiga fazia um JOIN manual, mas no VeiculoRepository podemos ter um método getByIdWithMilitar() 
+    // ou apenas chamamos o banco manualmente dentro do repositório.
+    // Vamos adicionar o método findByIdWithMilitar no VeiculoRepository
+    $m = $repo->findByIdWithMilitar($veiculo_id);
 
     if (!$m) die("Veículo ou militar não encontrado.");
 

@@ -3,19 +3,14 @@
 require_once __DIR__ . '/security.php';
 session_start();
 require_login(['admin', 's2']);
-require 'db_connect.php';
+require_once __DIR__ . '/src/Repositories/VeiculoRepository.php';
+
+use Sismil\Repositories\VeiculoRepository;
 
 try {
-    // Busca todos os veículos e faz o JOIN com a tabela de militares para trazer os donos
-    $sql = "SELECT v.*, m.posto_grad, m.nome_guerra, m.numero, m.subunidade, m.celular_princ 
-            FROM tb_veiculos v
-            JOIN tb_militares m ON v.militar_id = m.id
-            ORDER BY m.posto_grad DESC, m.nome_guerra ASC";
-            
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute();
-    $veiculos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
+    $repo = new VeiculoRepository();
+    $veiculos = $repo->getAllWithMilitar();
+} catch (\Exception $e) {
     error_log('[SISMIL] relatorio_s2.php: ' . $e->getMessage());
     die("Erro ao gerar relatório. Contate o administrador.");
 }

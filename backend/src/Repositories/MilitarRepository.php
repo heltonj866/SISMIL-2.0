@@ -152,4 +152,59 @@ class MilitarRepository {
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function getExportRelatorio(array $filtros, string $roleSessao): array {
+        $tipo = $filtros['tipo_busca'] ?? 'geral';
+        $inativos = isset($filtros['inativos']) && $filtros['inativos'] == '1';
+        $params = [];
+        $sql = "SELECT * FROM tb_militares WHERE 1=1";
+        
+        if (!$inativos) {
+            $sql .= " AND status_ativo = 1";
+        }
+
+        if ($tipo === 'geral') {
+            $termo = $filtros['termo'] ?? '';
+            $posto = $filtros['posto'] ?? '';
+            $su    = $filtros['su'] ?? '';
+            $qmg   = $filtros['qmg'] ?? '';
+            $sem_foto = isset($filtros['sem_foto']) && $filtros['sem_foto'] == '1';
+            $mes_aniversario = $filtros['mes_aniversario'] ?? '';
+
+            if (!empty($termo)) {
+                $t = "%" . trim($termo) . "%";
+                $sql .= " AND (nome_guerra LIKE :t1 OR nome_completo LIKE :t2 OR numero LIKE :t3)";
+                $params[':t1'] = $t; $params[':t2'] = $t; $params[':t3'] = $t;
+            }
+            if (!empty($posto)) { $sql .= " AND posto_grad = :posto"; $params[':posto'] = $posto; }
+            if (!empty($su)) { $sql .= " AND subunidade = :su"; $params[':su'] = $su; }
+            if (!empty($qmg)) { $sql .= " AND qmg = :qmg"; $params[':qmg'] = $qmg; }
+
+            if ($sem_foto) {
+                if (in_array(strtolower(trim($roleSessao)), ['admin', 'sargenteacao'])) {
+                    $sql .= " AND (foto_path IS NULL OR foto_path = '' OR foto_path = 'sem_foto.png' OR foto_path = 'sem_foto.PNG')";
+                }
+            }
+            if (!empty($mes_aniversario) && is_numeric($mes_aniversario) && $mes_aniversario >= 1 && $mes_aniversario <= 12) {
+                $sql .= " AND MONTH(dt_nascimento) = :mes_aniversario";
+                $params[':mes_aniversario'] = (int)$mes_aniversario;
+            }
+        } 
+        else if ($tipo === 'cnh') {
+            $filtro = $filtros['filtro_cnh'] ?? 'TODAS';
+            $sql .= " AND cat_cnh IS NOT NULL AND cat_cnh != ''";
+            
+            if ($filtro === 'PENDENTE') $sql .= " AND (homologado IS NULL OR homologado = 0)";
+            elseif ($filtro === 'VEICULOS') $sql .= " AND placa IS NOT NULL AND placa != ''";
+            elseif ($filtro === 'A') $sql .= " AND cat_cnh LIKE '%A%'";
+            elseif ($filtro === 'B') $sql .= " AND cat_cnh LIKE '%B%'";
+            elseif ($filtro === 'PRO') $sql .= " AND (cat_cnh LIKE '%C%' OR cat_cnh LIKE '%D%' OR cat_cnh LIKE '%E%' OR cat_cnh LIKE '%AD%' OR cat_cnh LIKE '%AE%')";
+        }
+
+        $sql .= " ORDER BY nome_guerra ASC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

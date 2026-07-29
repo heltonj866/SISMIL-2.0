@@ -3,7 +3,9 @@
 require_once __DIR__ . '/security.php';
 session_start();
 require_login(['admin', 'enc_mat']);
-require 'db_connect.php';
+require_once __DIR__ . '/src/Repositories/ArranchamentoRepository.php';
+
+use Sismil\Repositories\ArranchamentoRepository;
 
 $data = $_GET['data'] ?? date('Y-m-d');
 $dataBr = date('d/m/Y', strtotime($data));
@@ -14,34 +16,18 @@ $nomeDia = $dias[$diaSemana];
 $role = $_SESSION['usuario_role'];
 $sub = $_SESSION['usuario_sub'] ?? '';
 
-$sqlFilter = "";
-$params = [$data];
-
-if ($role === 'enc_mat' && !empty($sub)) {
-    $sqlFilter = " AND subunidade = ?";
-    $params[] = $sub;
-}
-
 try {
-    // Separar Oficiais/Sargentos e Cabos/Soldados
-    $sqlOfSgt = "SELECT * FROM tb_arranchamento 
-                 WHERE data_refeicao = ?" . $sqlFilter . " 
-                 AND posto_grad IN ('Cel', 'Ten Cel', 'Maj', 'Cap', '1º Ten', '2º Ten', 'Asp', 'Subten', '1º Sgt', '2º Sgt', '3º Sgt')
-                 ORDER BY FIELD(posto_grad, 'Cel', 'Ten Cel', 'Maj', 'Cap', '1º Ten', '2º Ten', 'Asp', 'Subten', '1º Sgt', '2º Sgt', '3º Sgt'), nome_guerra ASC";
-
-    $sqlCbSd = "SELECT * FROM tb_arranchamento 
-                WHERE data_refeicao = ?" . $sqlFilter . " 
-                AND posto_grad IN ('Cb', 'Sd EP', 'Sd EV', 'SC')
-                ORDER BY FIELD(posto_grad, 'Cb', 'Sd EP', 'Sd EV', 'SC'), CAST(numero AS UNSIGNED) ASC, nome_guerra ASC";
-
-    $stmt1 = $pdo->prepare($sqlOfSgt);
-    $stmt1->execute($params);
-    $ofSgt = $stmt1->fetchAll(PDO::FETCH_ASSOC);
-
-    $stmt2 = $pdo->prepare($sqlCbSd);
-    $stmt2->execute($params);
-    $cbSd = $stmt2->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
+    $repo = new ArranchamentoRepository();
+    
+    if ($role === 'enc_mat' && !empty($sub)) {
+        $resultado = $repo->getRelatorioImpressao($data, $sub);
+    } else {
+        $resultado = $repo->getRelatorioImpressao($data);
+    }
+    
+    $ofSgt = $resultado['ofSgt'];
+    $cbSd = $resultado['cbSd'];
+} catch (\Exception $e) {
     error_log("[SISMIL] Erro ao carregar arranchamento para impressão: " . $e->getMessage());
     die("Ocorreu um erro interno ao carregar a planilha de arranchamento.");
 }
