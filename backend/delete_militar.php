@@ -1,38 +1,62 @@
 <?php
-// ARQUIVO: backend/delete_militar.php
-header('Content-Type: application/json; charset=utf-8');
+/**
+ * ARQUIVO: backend/delete_militar.php
+ * Controlador para exclusão de militar e seus artefatos associados.
+ *
+ * @package Sismil\Controllers
+ */
+
+require_once __DIR__ . '/src/Core/Response.php';
+require_once __DIR__ . '/src/Core/Database.php';
+require_once __DIR__ . '/src/Services/AuditLogger.php';
 require_once __DIR__ . '/security.php';
+
+use Sismil\Core\Database;
+use Sismil\Core\Response;
+use Sismil\Services\AuditLogger;
+
 session_start();
 require_login(['admin']);
 validate_csrf();
-require 'db_connect.php';
 
 $input = json_decode(file_get_contents('php://input'), true);
-$id    = $input['id'] ?? '';
+$id    = filter_var($input['id'] ?? '', FILTER_VALIDATE_INT);
 
 if (empty($id)) {
-    send_error('ID não informado.');
+    Response::error('ID inválido ou não informado.', 400);
 }
 
 try {
-    // Recuperar a foto para apagar do disco
-    $stmt = $pdo->prepare("SELECT foto_path FROM tb_militares WHERE id = ?");
+    $pdo = Database::getInstance();
+    
+    // Recuperar a foto para apagar do disco e dados para auditoria
+    $stmt = $pdo->prepare("SELECT nome_guerra, foto_path FROM tb_militares WHERE id = ?");
     $stmt->execute([$id]);
     $militar = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$militar) {
+        Response::error('Militar não encontrado.', 404);
+    }
 
     // Apagar o registro
     $stmtDel = $pdo->prepare("DELETE FROM tb_militares WHERE id = ?");
     if ($stmtDel->execute([$id])) {
         // Apagar foto do disco se existir
-        if ($militar && !empty($militar['foto_path'])) {
+        if (!empty($militar['foto_path'])) {
             $arquivo = __DIR__ . '/../uploads/' . basename($militar['foto_path']);
-            if (file_exists($arquivo)) unlink($arquivo);
+            if (file_exists($arquivo)) {
+                unlink($arquivo);
+            }
         }
-        echo json_encode(['status' => 'sucesso', 'msg' => 'Excluído com sucesso.']);
+        
+        // Registrar na Trilha de Auditoria
+        AuditLogger::log('DELETE_MILITAR', "Militar ID {$id} ({$militar['nome_guerra']}) excluído do sistema permanentemente.");
+
+        Response::json(null, 'Excluído com sucesso.');
     } else {
-        throw new Exception("Erro ao excluir do banco.");
+        throw new \Exception("Erro ao executar a exclusão no banco de dados.");
     }
-} catch (Exception $e) {
-    send_error('Erro ao excluir militar.', 'delete_militar.php: ' . $e->getMessage());
+} catch (\Exception $e) {
+    error_log('[SISMIL] ' . $e->getMessage());
+    Response::error('Erro ao excluir militar. Contate o suporte.', 500);
 }
-?>

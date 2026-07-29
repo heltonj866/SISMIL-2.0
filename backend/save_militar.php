@@ -1,40 +1,66 @@
 <?php
-// ARQUIVO: backend/save_militar.php
-header('Content-Type: application/json; charset=utf-8');
+/**
+ * ARQUIVO: backend/save_militar.php
+ * Endpoint para salvar ou atualizar registros de militares.
+ *
+ * @package Sismil\Controllers
+ */
+
+require_once __DIR__ . '/src/Core/Response.php';
+require_once __DIR__ . '/src/Core/Database.php';
+require_once __DIR__ . '/src/Services/AuditLogger.php';
 require_once __DIR__ . '/security.php';
+
+use Sismil\Core\Database;
+use Sismil\Core\Response;
+use Sismil\Services\AuditLogger;
+
 session_start();
 require_login(['admin', 'sargenteacao']);
 validate_csrf();
-require 'db_connect.php';
 
 try {
-    function getPost($key) {
+    $pdo = Database::getInstance();
+
+    /**
+     * Obtém valores do $_POST de forma segura, retornando null se vazio.
+     */
+    function getPost(string $key): ?string {
         $val = $_POST[$key] ?? null;
         return ($val === '' || $val === 'null') ? null : trim($val);
     }
 
-    // --- HIGH-02: Função para validar upload de arquivo com MIME real ---
-    function validar_upload($file_key, $extensoes_permitidas, $mimes_permitidos, $dir, $prefixo) {
+    /**
+     * Realiza a validação rigorosa de upload de arquivo analisando o tipo MIME real.
+     *
+     * @param string $file_key Chave do arquivo na superglobal $_FILES.
+     * @param array<string> $extensoes_permitidas Extensões de arquivo autorizadas.
+     * @param array<string> $mimes_permitidos Tipos MIME validados via magic bytes.
+     * @param string $dir Diretório de destino no servidor.
+     * @param string $prefixo Prefixo para o nome seguro gerado.
+     * @return string|null Nome do arquivo salvo ou null caso nenhum arquivo tenha sido enviado.
+     * @throws Exception Se o arquivo não atender aos requisitos de segurança.
+     */
+    function validar_upload(string $file_key, array $extensoes_permitidas, array $mimes_permitidos, string $dir, string $prefixo): ?string {
         if (!isset($_FILES[$file_key]) || $_FILES[$file_key]['error'] !== UPLOAD_ERR_OK) {
             return null;
         }
         $file = $_FILES[$file_key];
         $ext  = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
 
-        // Valida extensão
-        if (!in_array($ext, $extensoes_permitidas)) {
+        if (!in_array($ext, $extensoes_permitidas, true)) {
             throw new Exception("Tipo de arquivo inválido para '$file_key'. Permitido: " . implode(', ', $extensoes_permitidas));
         }
 
-        // Valida MIME real do conteúdo do arquivo
         $mime_real = mime_content_type($file['tmp_name']);
-        if (!in_array($mime_real, $mimes_permitidos)) {
+        if (!in_array($mime_real, $mimes_permitidos, true)) {
             throw new Exception("Conteúdo de arquivo inválido para '$file_key'. MIME detectado: $mime_real");
         }
 
-        if (!is_dir($dir)) mkdir($dir, 0755, true);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
 
-        // Nome seguro com extensão controlada (nunca usa a extensão original)
         $ext_segura = ($ext === 'pdf') ? 'pdf' : 'jpg';
         $novo_nome  = $prefixo . bin2hex(random_bytes(8)) . '.' . $ext_segura;
 
@@ -46,24 +72,24 @@ try {
 
     $id  = getPost('id_militar') ?? getPost('militarId');
     $cpf = getPost('cpf');
-    if (!$cpf) throw new Exception("O CPF é obrigatório.");
+    
+    if (!$cpf) {
+        Response::error('O CPF é obrigatório.', 400);
+    }
 
     $dir_uploads = __DIR__ . '/../uploads/';
     $dir_docs    = __DIR__ . '/../uploads/documentos/';
 
-    // Upload de Foto — HIGH-02: valida MIME real (somente imagens)
-    $foto_path = validar_upload('foto', ['jpg','jpeg','png','webp'],
-        ['image/jpeg','image/png','image/webp'], $dir_uploads, 'foto_');
+    // Upload de Foto (MIME: Imagens)
+    $foto_path = validar_upload('foto', ['jpg','jpeg','png','webp'], ['image/jpeg','image/png','image/webp'], $dir_uploads, 'foto_');
     $sqlFoto = $foto_path ? ", foto_path = :foto" : "";
 
-    // Upload de CNH — apenas PDF
-    $pdf_cnh = validar_upload('pdf_habilitacao', ['pdf'],
-        ['application/pdf'], $dir_docs, 'cnh_');
+    // Upload de CNH (MIME: PDF)
+    $pdf_cnh = validar_upload('pdf_habilitacao', ['pdf'], ['application/pdf'], $dir_docs, 'cnh_');
     $sqlCnh = $pdf_cnh ? ", pdf_habilitacao = :pdf_cnh" : "";
 
-    // Upload de Nada Consta — apenas PDF
-    $pdf_nada_consta = validar_upload('pdf_nada_consta', ['pdf'],
-        ['application/pdf'], $dir_docs, 'nc_');
+    // Upload de Nada Consta (MIME: PDF)
+    $pdf_nada_consta = validar_upload('pdf_nada_consta', ['pdf'], ['application/pdf'], $dir_docs, 'nc_');
     $sqlPdf = $pdf_nada_consta ? ", pdf_nada_consta = :pdf_nada_consta" : "";
 
     $dados = [
@@ -98,9 +124,13 @@ try {
         ':validade_cnh'   => getPost('validade_cnh'),
     ];
 
+    $acaoAuditoria = 'CREATE_MILITAR';
+    $identificador = $cpf;
+
     if ($id) {
+        $acaoAuditoria = 'UPDATE_MILITAR';
         $dados[':id'] = $id;
-        if ($foto_path)       $dados[':foto']           = $foto_path;
+        if ($foto_path)       $dados[':foto']            = $foto_path;
         if ($pdf_nada_consta) $dados[':pdf_nada_consta'] = $pdf_nada_consta;
         if ($pdf_cnh)         $dados[':pdf_cnh']         = $pdf_cnh;
 
@@ -116,7 +146,7 @@ try {
             $sqlFoto $sqlPdf $sqlCnh
             WHERE id=:id";
     } else {
-        $dados[':foto']           = $foto_path;
+        $dados[':foto']            = $foto_path;
         $dados[':pdf_nada_consta'] = $pdf_nada_consta;
         $dados[':pdf_cnh']         = $pdf_cnh;
 
@@ -136,9 +166,18 @@ try {
     }
 
     $pdo->prepare($sql)->execute($dados);
-    echo json_encode(['status' => 'sucesso', 'msg' => 'Salvo com sucesso!']);
+    
+    // Registro na Trilha de Auditoria
+    $acaoDetalhes = json_encode([
+        'cpf' => $cpf,
+        'nome_guerra' => getPost('nome_guerra'),
+        'posto_grad' => getPost('posto_grad')
+    ]);
+    AuditLogger::log($acaoAuditoria, "Registro de militar processado. Dados: $acaoDetalhes");
+
+    Response::json(null, 'Salvo com sucesso!');
 
 } catch (Exception $e) {
-    send_error($e->getMessage(), 'save_militar.php: ' . $e->getMessage());
+    error_log('[SISMIL] Erro ao salvar militar: ' . $e->getMessage());
+    Response::error('Falha ao processar o formulário. ' . $e->getMessage(), 400);
 }
-?>

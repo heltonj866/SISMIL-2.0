@@ -1,21 +1,31 @@
 <?php
-// ARQUIVO: backend/login.php
-header('Content-Type: application/json; charset=utf-8');
+/**
+ * ARQUIVO: backend/login.php
+ * Controlador de Autenticação de Usuários.
+ *
+ * @package Sismil\Controllers
+ */
+
+require_once __DIR__ . '/src/Core/Response.php';
+require_once __DIR__ . '/src/Core/Database.php';
+require_once __DIR__ . '/src/Services/AuditLogger.php';
 require_once __DIR__ . '/security.php';
-require_once 'db_connect.php';
+
+use Sismil\Core\Database;
+use Sismil\Core\Response;
+use Sismil\Services\AuditLogger;
+
 apply_cors();
 
-// --- MED-01 + HIGH-01: Iniciar sessão com cookies seguros ---
-// O flag 'secure' é ativado apenas quando HTTPS está de fato ativo no servidor.
-// Isso garante compatibilidade tanto em HTTP (antes do SSL) quanto em HTTPS (pós-SSL).
+// Configuração segura de sessão
 $is_https = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
 session_set_cookie_params([
     'lifetime' => 0,
     'path'     => '/',
     'domain'   => '',
-    'secure'   => $is_https,  // true automaticamente quando HTTPS estiver ativo
-    'httponly' => true,        // Bloqueia acesso via JavaScript (XSS mitigation)
-    'samesite' => 'Strict'    // Bloqueia envio em requisições cross-site (CSRF mitigation)
+    'secure'   => $is_https,
+    'httponly' => true,
+    'samesite' => 'Strict'
 ]);
 session_start();
 
@@ -24,29 +34,31 @@ $identidade = trim($input['identidade'] ?? '');
 $senha      = $input['senha'] ?? '';
 
 if (empty($identidade) || empty($senha)) {
-    send_error('Preencha o login e a senha.');
+    Response::error('Preencha o login e a senha.', 400);
 }
 
-// --- HIGH-04: Rate limiting por IP (máx 10 tentativas em 15 min) ---
+// Proteção contra força bruta (Rate Limiting)
 $rate_id = 'login_' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
 if (!check_rate_limit($rate_id, 10, 900)) {
-    send_error('Muitas tentativas de login. Tente novamente em 15 minutos.');
+    AuditLogger::log('LOGIN_BLOCKED', "Tentativas excedidas para identidade: $identidade", null, $identidade);
+    Response::error('Muitas tentativas de login. Tente novamente em 15 minutos.', 429);
 }
 
 try {
+    $pdo = Database::getInstance();
     $stmt = $pdo->prepare("SELECT * FROM tb_usuarios WHERE identidade = ? LIMIT 1");
     $stmt->execute([$identidade]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user && password_verify($senha, $user['senha_hash'])) {
         if ($user['ativo'] == 0) {
-            send_error('Conta inativa. Contate o administrador.');
+            AuditLogger::log('LOGIN_FAILED_INACTIVE', "Tentativa de login em conta inativa", $user['id'], $identidade);
+            Response::error('Conta inativa. Contate o administrador.', 403);
         }
 
-        // Login bem-sucedido: zera o rate limit
         reset_rate_limit($rate_id);
-
-        // --- MED-01: Regenerar ID de sessão para prevenir session fixation ---
+        
+        // Prevenção contra Session Fixation
         session_regenerate_id(true);
 
         $_SESSION['usuario_id']    = $user['id'];
@@ -54,19 +66,20 @@ try {
         $_SESSION['usuario_login'] = $user['identidade'];
         $_SESSION['usuario_sub']   = $user['subunidade'] ?? '';
 
-        // --- HIGH-01: Gerar token CSRF para esta sessão ---
         $csrf_token = generate_csrf_token();
+        
+        AuditLogger::log('LOGIN_SUCCESS', "Login efetuado com sucesso (Role: {$user['role']})", $user['id'], $identidade);
 
-        echo json_encode([
-            'status'     => 'sucesso',
+        Response::json([
             'role'       => $user['role'],
             'subunidade' => $_SESSION['usuario_sub'],
             'csrf_token' => $csrf_token,
-        ]);
+        ], 'Login efetuado com sucesso.');
     } else {
-        send_error('Login ou senha incorretos.');
+        AuditLogger::log('LOGIN_FAILED', "Credenciais inválidas para identidade: $identidade", null, $identidade);
+        Response::error('Login ou senha incorretos.', 401);
     }
 } catch (Exception $e) {
-    send_error('Erro interno do servidor.', 'login.php - ' . $e->getMessage());
+    error_log('[SISMIL] Erro interno: ' . $e->getMessage());
+    Response::error('Erro interno do servidor.', 500);
 }
-?>
