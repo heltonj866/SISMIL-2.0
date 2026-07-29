@@ -22,7 +22,21 @@ class UsuarioRepository {
      */
     public function findAllSecure(): array {
         // Segurança: omitimos o campo 'senha_hash' da listagem base
-        $stmt = $this->db->query("SELECT id, identidade, role, ativo, subunidade, nome, posto_grad FROM tb_usuarios ORDER BY id DESC");
-        return $stmt->fetchAll();
+        $sql = "
+            SELECT 
+                u.id, 
+                u.identidade, 
+                u.role, 
+                u.ativo, 
+                u.militar_id,
+                COALESCE(m.subunidade, u.subunidade) as subunidade, 
+                COALESCE(m.nome_guerra, u.nome) as nome, 
+                COALESCE(m.posto_grad, u.posto_grad) as posto_grad
+            FROM tb_usuarios u
+            LEFT JOIN tb_militares m ON u.militar_id = m.id
+            ORDER BY u.id DESC
+        ";
+        $stmt = $this->db->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

@@ -25,7 +25,14 @@ class AuthController {
 
         try {
             $pdo = Database::getInstance();
-            $stmt = $pdo->prepare("SELECT id, username, password_hash, role, nome_guerra, subunidade FROM tb_usuarios WHERE username = ? AND status_ativo = 1");
+            $stmt = $pdo->prepare("
+                SELECT u.id, u.identidade as username, u.senha_hash as password_hash, u.role, 
+                       u.militar_id, COALESCE(m.nome_guerra, u.nome) as nome_guerra, 
+                       COALESCE(m.subunidade, u.subunidade) as subunidade
+                FROM tb_usuarios u
+                LEFT JOIN tb_militares m ON u.militar_id = m.id
+                WHERE u.identidade = ? AND u.ativo = 1
+            ");
             $stmt->execute([$username]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -37,6 +44,7 @@ class AuthController {
                 $_SESSION['usuario_role'] = $user['role'];
                 $_SESSION['usuario_nome'] = $user['nome_guerra'];
                 $_SESSION['usuario_sub'] = $user['subunidade'];
+                $_SESSION['militar_id'] = $user['militar_id'];
                 $_SESSION['logado'] = true;
                 $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 

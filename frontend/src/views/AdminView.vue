@@ -72,6 +72,17 @@
           </div>
           <form @submit.prevent="handleSave" class="modal-form">
             <div class="field">
+              <label>Vincular a um Militar (Opcional)</label>
+              <select v-model="form.militar_id" class="input-modern">
+                <option value="">Não vincular (Usuário Genérico/Civil)</option>
+                <option v-for="m in militaresList" :key="m.id" :value="m.id">
+                  {{ m.posto_grad }} {{ m.nome_guerra }} (IDT: {{ m.idt_militar }})
+                </option>
+              </select>
+              <small class="text-muted">Se vinculado, Nome, Posto e Cia serão puxados automaticamente.</small>
+            </div>
+
+            <div class="field">
               <label>Login (CPF / Identidade)</label>
               <input type="text" v-model="form.identidade" class="input-modern"
                 :readonly="isEditing" :placeholder="isEditing ? '' : 'Ex: 123.456.789-00'" required>
@@ -93,32 +104,34 @@
               </select>
             </div>
 
-            <div class="field">
-              <label>Posto / Graduação</label>
-              <select v-model="form.posto_grad" class="input-modern" required>
-                <option value="">Selecione...</option>
-                <option v-for="p in ['Cel','Ten Cel','Maj','Cap','1º Ten','2º Ten','Asp','Subten','1º Sgt','2º Sgt','3º Sgt','Cb','Sd EP','Sd EV','SC']" :key="p" :value="p">{{ p }}</option>
-              </select>
-            </div>
+            <template v-if="!form.militar_id">
+              <div class="field">
+                <label>Posto / Graduação</label>
+                <select v-model="form.posto_grad" class="input-modern" required>
+                  <option value="">Selecione...</option>
+                  <option v-for="p in ['Cel','Ten Cel','Maj','Cap','1º Ten','2º Ten','Asp','Subten','1º Sgt','2º Sgt','3º Sgt','Cb','Sd EP','Sd EV','SC']" :key="p" :value="p">{{ p }}</option>
+                </select>
+              </div>
 
-            <div class="field">
-              <label>Nome do Usuário</label>
-              <input type="text" v-model="form.nome" class="input-modern" required>
-            </div>
+              <div class="field">
+                <label>Nome do Usuário</label>
+                <input type="text" v-model="form.nome" class="input-modern" required>
+              </div>
 
-            <!-- Mostrar Subunidade para todos os usuários -->
-            <div class="field">
-              <label>Subunidade (CIA)</label>
-              <select v-model="form.subunidade" class="input-modern" required>
-                <option value="">Selecione a Subunidade</option>
-                <option value="EM">Estado Maior</option>
-                <option value="CCAP">CCAP</option>
-                <option value="1CIA">1ª Cia Eng Cnst</option>
-                <option value="2CIA">2ª Cia Eng Cnst</option>
-                <option value="CIA_EQP">Cia Eqp E Mnt</option>
-                <option value="PMGU">PMGU</option>
-              </select>
-            </div>
+              <!-- Mostrar Subunidade para todos os usuários -->
+              <div class="field">
+                <label>Subunidade (CIA)</label>
+                <select v-model="form.subunidade" class="input-modern" required>
+                  <option value="">Selecione a Subunidade</option>
+                  <option value="EM">Estado Maior</option>
+                  <option value="CCAP">CCAP</option>
+                  <option value="1CIA">1ª Cia Eng Cnst</option>
+                  <option value="2CIA">2ª Cia Eng Cnst</option>
+                  <option value="CIA_EQP">Cia Eqp E Mnt</option>
+                  <option value="PMGU">PMGU</option>
+                </select>
+              </div>
+            </template>
 
             <div class="field" v-if="isEditing">
               <label>Status da Conta</label>
@@ -146,17 +159,19 @@
 import { ref, onMounted } from 'vue'
 import { useToast, useConfirm } from '../composables/useToast'
 import { UserService } from '@/services/UserService'
+import { MilitarService } from '@/services/MilitarService'
 
 const { success: toastSuccess, error: toastError, warning: toastWarning } = useToast()
 const { ask: confirmDialog } = useConfirm()
 
 const usuarios = ref([])
+const militaresList = ref([])
 const showModal = ref(false)
 const loading = ref(false)
 const isEditing = ref(false)
 const editId = ref(null)
 
-const form = ref({ identidade: '', senha: '', role: 'user', ativo: '1', subunidade: '', nome: '', posto_grad: '' })
+const form = ref({ identidade: '', senha: '', role: 'user', ativo: '1', subunidade: '', nome: '', posto_grad: '', militar_id: '' })
 
 const roleLabel = (r) => {
   const map = { admin: 'Administrador', sargenteacao: 'Sargenteação', s2: 'S2 / Inteligência', enc_mat: 'Enc. Material', user: 'Usuário' }
@@ -174,10 +189,19 @@ const fetchUsers = async () => {
   } catch (e) { toastError('Erro ao carregar usuários.') }
 }
 
+const fetchMilitares = async () => {
+  try {
+    const json = await MilitarService.search({ tipo_busca: 'geral' })
+    if (json.status === 'sucesso') {
+      militaresList.value = json.dados || []
+    }
+  } catch (e) { console.error('Erro ao carregar militares.', e) }
+}
+
 const openCreate = () => {
   isEditing.value = false
   editId.value = null
-  form.value = { identidade: '', senha: '', role: 'user', ativo: '1', subunidade: '', nome: '', posto_grad: '' }
+  form.value = { identidade: '', senha: '', role: 'user', ativo: '1', subunidade: '', nome: '', posto_grad: '', militar_id: '' }
   showModal.value = true
 }
 
@@ -191,7 +215,8 @@ const openEdit = (user) => {
     ativo: String(user.ativo),
     subunidade: user.subunidade || '',
     nome: user.nome || '',
-    posto_grad: user.posto_grad || ''
+    posto_grad: user.posto_grad || '',
+    militar_id: user.militar_id || ''
   }
   showModal.value = true
 }
@@ -213,7 +238,8 @@ const handleSave = async () => {
         ativo: form.value.ativo,
         new_user_subunidade: form.value.subunidade,
         nome: form.value.nome,
-        posto_grad: form.value.posto_grad
+        posto_grad: form.value.posto_grad,
+        militar_id: form.value.militar_id
       }
       const json = await UserService.update(payload)
       if (json.status === 'sucesso') {
@@ -229,13 +255,14 @@ const handleSave = async () => {
         new_user_role: form.value.role,
         new_user_subunidade: form.value.subunidade,
         nome: form.value.nome,
-        posto_grad: form.value.posto_grad
+        posto_grad: form.value.posto_grad,
+        militar_id: form.value.militar_id
       }
       const json = await UserService.create(payload)
       if (json.status === 'sucesso') {
         toastSuccess('Usuário criado com sucesso!')
         showModal.value = false
-        form.value = { identidade: '', senha: '', role: 'user', ativo: '1', subunidade: '', nome: '', posto_grad: '' }
+        form.value = { identidade: '', senha: '', role: 'user', ativo: '1', subunidade: '', nome: '', posto_grad: '', militar_id: '' }
         fetchUsers()
       } else { toastError('Erro: ' + (json.msg || 'Erro desconhecido')) }
     }
@@ -258,7 +285,10 @@ const handleDelete = async (u) => {
   } catch (e) { toastError('Erro de conexão.') }
 }
 
-onMounted(fetchUsers)
+onMounted(() => {
+  fetchUsers()
+  fetchMilitares()
+})
 </script>
 
 <style scoped>
