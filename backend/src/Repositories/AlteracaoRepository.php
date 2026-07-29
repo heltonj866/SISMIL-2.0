@@ -39,4 +39,14 @@ class AlteracaoRepository {
         $stmt = $this->db->prepare("DELETE FROM tb_alteracoes WHERE id = ?");
         $stmt->execute([$id]);
     }
+
+    public function registrar(int $militarId, ?int $operadorId, string $dataFato, string $secao, string $tipoAlteracao, string $descricao): void {
+        $operadorNome = $_SESSION['usuario_nome'] ?? null;
+        try {
+            $stmt = $this->db->prepare("INSERT INTO tb_alteracoes (militar_id, tipo_alteracao, descricao, data_fato, operador_id, operador_nome) VALUES (?,?,?,?,?,?)");
+            $stmt->execute([$militarId, $tipoAlteracao, $descricao, $dataFato, $operadorId, $operadorNome]);
+        } catch (\Exception $e) {
+            error_log("[SISMIL] Erro ao registrar histórico de alteração: " . $e->getMessage());
+        }
+    }
 }
