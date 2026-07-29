@@ -415,6 +415,7 @@ const fetchDadosCompletos = async () => {
       dadosCompletos.value = json.dados
       // Preenche o form com dados completos
       const d = json.dados
+      form.value.id = d.id || ''
       form.value.id_militar = d.id || ''
       form.value.cpf = d.cpf || d.identidade || ''
       form.value.posto_grad = d.posto_grad || ''
@@ -462,6 +463,7 @@ watch(() => props.modoS2, (val) => {
 const postos = ["Cel", "TC", "Maj", "Cap", "1º Ten", "2º Ten", "Asp", "S Ten", "1º Sgt", "2º Sgt", "3º Sgt", "Alu", "Cb", "Sd EP", "Sd EV", "SC"]
 
 const form = ref({
+  id: props.militar?.id || '',
   id_militar: props.militar?.id || '',
   cpf: props.militar?.cpf || props.militar?.identidade || '',
   posto_grad: props.militar?.posto_grad || '',
