@@ -17,11 +17,33 @@ class DashboardController {
             $militares = (int)$pdo->query("SELECT COUNT(*) FROM tb_militares WHERE status_ativo = 1")->fetchColumn();
             $inativos  = (int)$pdo->query("SELECT COUNT(*) FROM tb_militares WHERE status_ativo = 0")->fetchColumn();
 
-            // --- Distribuição por Subunidade ---
-            $suStmt     = $pdo->query("SELECT subunidade, COUNT(*) as total FROM tb_militares WHERE status_ativo = 1 GROUP BY subunidade ORDER BY total DESC");
+            // --- Efetivo por Subunidade e Posto (Detalhado) ---
+            $sqlEf = "SELECT subunidade, posto_grad, COUNT(*) as qtd
+                      FROM tb_militares WHERE status_ativo = 1
+                      GROUP BY subunidade, posto_grad
+                      ORDER BY subunidade ASC,
+                        CASE posto_grad
+                            WHEN 'Gen Ex' THEN 1 WHEN 'Gen Div' THEN 2 WHEN 'Gen Bda' THEN 3 WHEN 'Cel' THEN 4
+                            WHEN 'TC' THEN 5 WHEN 'Ten Cel' THEN 5 WHEN 'Maj' THEN 6 WHEN 'Cap' THEN 7
+                            WHEN '1º Ten' THEN 8 WHEN '2º Ten' THEN 9 WHEN 'Asp' THEN 10
+                            WHEN 'Subten' THEN 11 WHEN 'Sub Ten' THEN 11 WHEN 'S Ten' THEN 11
+                            WHEN '1º Sgt' THEN 12 WHEN '2º Sgt' THEN 13 WHEN '3º Sgt' THEN 14
+                            WHEN 'Alu' THEN 15 WHEN 'Cb' THEN 16 WHEN 'Sd EP' THEN 17 WHEN 'Sd EV' THEN 18
+                            WHEN 'Sd' THEN 18 WHEN 'SC' THEN 99 ELSE 100 END ASC";
+            
+            $efetivo_raw = $pdo->query($sqlEf)->fetchAll(PDO::FETCH_ASSOC);
+            
             $efetivo_su = [];
-            foreach ($suStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-                $efetivo_su[$row['subunidade'] ?: 'Sem SU'] = ['total' => (int)$row['total']];
+            foreach ($efetivo_raw as $row) {
+                $su = $row['subunidade'] ?: 'Sem SU';
+                if (!isset($efetivo_su[$su])) {
+                    $efetivo_su[$su] = ['total' => 0, 'detalhes' => []];
+                }
+                $efetivo_su[$su]['total'] += (int)$row['qtd'];
+                $efetivo_su[$su]['detalhes'][] = [
+                    'posto' => $row['posto_grad'] ?: 'Outro',
+                    'qtd'   => (int)$row['qtd']
+                ];
             }
 
             // --- CNH por Categoria (coluna real: cat_cnh) ---
@@ -29,7 +51,7 @@ class DashboardController {
             $cnh_cats = $cnhStmt->fetchAll(PDO::FETCH_ASSOC);
             $com_cnh  = (int)$pdo->query("SELECT COUNT(*) FROM tb_militares WHERE status_ativo = 1 AND cat_cnh IS NOT NULL AND cat_cnh != ''")->fetchColumn();
 
-            // --- Veículos (inline, sem depender de método que pode não existir) ---
+            // --- Veículos ---
             $veiculos    = 0;
             $pendentes   = 0;
             $homologados = 0;
