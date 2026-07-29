@@ -16,6 +16,7 @@ use Sismil\Core\Response;
 use Sismil\Services\AuditLogger;
 
 session_start();
+apply_cors();
 require_login(['admin', 'sargenteacao']);
 validate_csrf();
 
