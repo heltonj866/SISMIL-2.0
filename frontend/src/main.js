@@ -11,6 +11,15 @@ const pinia = createPinia()
 app.use(pinia)
 app.use(router)
 
+// Trata silenciosamente erros de mutação DOM causados por tradutores externos do navegador
+app.config.errorHandler = (err, instance, info) => {
+  if (err && err.message && (err.message.includes('insertBefore') || err.message.includes('removeChild') || err.message.includes('Node'))) {
+    console.warn('[SISMIL] Mutação DOM de tradutor externo ignorada:', err.message)
+    return
+  }
+  console.error('[SISMIL Error]', err, info)
+}
+
 // Intercept window.fetch to inject CSRF token and credentials for backend APIs
 const originalFetch = window.fetch
 window.fetch = async (input, init = {}) => {
