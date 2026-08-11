@@ -53,7 +53,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-
+import { useToast } from '../composables/useToast'
 import { AuthService } from '../services/AuthService.js'
 
 const cpf = ref('')
@@ -78,8 +78,8 @@ const handleLogin = async () => {
     const data = await AuthService.login(cpf.value, senha.value)
     
     if (data.status === 'sucesso') {
-      // Armazena role, identidade E token CSRF retornado pelo servidor
       authStore.setSession(data.role, cpf.value, data.csrf_token)
+      useToast().success('Login efetuado com sucesso!')
       router.push({ name: 'dashboard' })
     } else {
       errorMessage.value = data.msg || data.message || 'Erro ao realizar login.'

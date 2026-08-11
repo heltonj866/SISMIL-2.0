@@ -595,7 +595,10 @@ const handleSave = async () => {
   if (fileUploads.value.pdf_habilitacao) fd.append('pdf_habilitacao', fileUploads.value.pdf_habilitacao)
   try {
     const json = await MilitarService.save(fd)
-    if (json.status === 'sucesso' || json.id) emit('saved')
+    if (json.status === 'sucesso' || json.id) {
+      toastSuccess('Registro salvo com sucesso!')
+      emit('saved')
+    }
     else toastError('Erro: ' + (json.msg || 'Erro ao salvar.'))
   } catch (e) { toastError('Erro de conexão ao salvar.') }
   finally { loading.value = false }

@@ -62,7 +62,7 @@ class UserController {
             Response::json(['status' => 'sucesso']);
         } catch (Exception $e) {
             error_log('[SISMIL] Erro: ' . $e->getMessage());
-            Response::json(['status' => 'erro', 'msg' => 'Erro interno']);
+            Response::error('Erro interno', 500);
         }
     }
 
@@ -107,7 +107,7 @@ class UserController {
             Response::json(['status' => 'sucesso']);
         } catch (Exception $e) {
             error_log('[SISMIL] Erro: ' . $e->getMessage());
-            Response::json(['status' => 'erro', 'msg' => 'Erro interno']);
+            Response::error('Erro interno', 500);
         }
     }
 
@@ -116,7 +116,7 @@ class UserController {
         validate_csrf();
 
         $id = (int)($request->getBody('id_user') ?? 0);
-        if ($id <= 0) Response::json(['status' => 'erro', 'msg' => 'ID inválido']);
+        if ($id <= 0) Response::error('ID inválido', 400);
 
         try {
             $pdo = Database::getInstance();
@@ -125,7 +125,7 @@ class UserController {
             AuditLogger::log('USER_DELETE', "Administrador deletou o usuário ID {$id}");
             Response::json(['status' => 'sucesso']);
         } catch (Exception $e) {
-            Response::json(['status' => 'erro', 'msg' => 'Erro interno']);
+            Response::error('Erro interno', 500);
         }
     }
 }

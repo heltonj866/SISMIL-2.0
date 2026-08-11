@@ -60,6 +60,7 @@ $router->get('/api/dashboard/stats', [DashboardController::class, 'stats']);
 $router->get('/api/militar/search', [MilitarController::class, 'search']);
 $router->get('/api/militar/get', [MilitarController::class, 'getById']);
 $router->get('/api/militar/historico', [MilitarController::class, 'getHistorico']);
+$router->get('/api/cep', [MilitarController::class, 'getCep']);
 $router->post('/api/militar/save', [MilitarController::class, 'save']);
 $router->post('/api/militar/desligar', [MilitarController::class, 'desligar']);
 $router->post('/api/militar/reativar', [MilitarController::class, 'reativar']);

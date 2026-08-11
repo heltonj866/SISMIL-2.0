@@ -25,7 +25,13 @@ class MilitarController {
         
         try {
             $repo = new MilitarRepository();
-            $data = $repo->searchComplex($filtros);
+            
+            if ($isPublic && !empty($filtros['termo'])) {
+                $data = $repo->searchPublic($filtros['termo']);
+            } else {
+                $data = $repo->searchComplex($filtros);
+            }
+            
             Response::json(['dados' => $data], 'Busca realizada com sucesso.');
         } catch (\Exception $e) {
             error_log("[SISMIL] Erro ao buscar militares: " . $e->getMessage());
@@ -202,5 +208,38 @@ class MilitarController {
             error_log('[SISMIL] Erro ao excluir alteração: ' . $e->getMessage());
             Response::error('Erro ao excluir alteração.', 500);
         }
+    }
+
+    public function getCep(Request $request) {
+        $cep = preg_replace('/\D/', '', $request->getQuery('cep', ''));
+        if (strlen($cep) !== 8) {
+            Response::error('CEP deve conter 8 dígitos.', 400);
+        }
+        
+        $jsonStr = null;
+
+        if (function_exists('curl_init')) {
+            $ch = curl_init("https://viacep.com.br/ws/{$cep}/json/");
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_USERAGENT, 'SISMIL/2.0');
+            $jsonStr = curl_exec($ch);
+            curl_close($ch);
+        }
+        
+        if (!$jsonStr && ini_get('allow_url_fopen')) {
+            $ctx = stream_context_create(['http' => ['timeout' => 5, 'header' => "User-Agent: SISMIL/2.0\r\n"]]);
+            $jsonStr = @file_get_contents("https://viacep.com.br/ws/{$cep}/json/", false, $ctx);
+        }
+        
+        if ($jsonStr) {
+            $data = json_decode($jsonStr, true);
+            if (is_array($data) && !isset($data['erro'])) {
+                Response::json(['dados' => $data]);
+                return;
+            }
+        }
+        Response::error('CEP não encontrado ou servidor da OM sem acesso à internet.', 404);
     }
 }
