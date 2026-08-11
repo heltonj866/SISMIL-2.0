@@ -86,7 +86,7 @@
                 <div class="v-placa">{{ d.veiculo.placa }}</div>
                 <div class="v-status">
                   <i :class="d.veiculo.homologado == 1 ? 'fas fa-check-circle' : 'fas fa-clock'"></i>
-                  {{ d.veiculo.homologado == 1 ? 'LIBERADO S2' : 'PENDENTE S2' }}
+                  {{ d.veiculo.homologado == 1 ? 'LIBERADO' : 'PENDENTE' }}
                 </div>
               </div>
             </div>
