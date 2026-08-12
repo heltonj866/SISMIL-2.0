@@ -25,9 +25,11 @@ class ArranchamentoController {
             
             $total_cafe = 0;
             $total_almoco = 0;
+            $total_jantar = 0;
             foreach ($registros as $r) {
                 if ($r['cafe']) $total_cafe++;
                 if ($r['almoco']) $total_almoco++;
+                if ($r['jantar']) $total_jantar++;
             }
             
             Response::json([
@@ -35,7 +37,8 @@ class ArranchamentoController {
                 'data' => $data,
                 'totais' => [
                     'cafe' => $total_cafe,
-                    'almoco' => $total_almoco
+                    'almoco' => $total_almoco,
+                    'jantar' => $total_jantar
                 ],
                 'registros' => $registros
             ]);
@@ -61,6 +64,22 @@ class ArranchamentoController {
         } catch (\Exception $e) {
             error_log("[SISMIL] Erro ao salvar arranchamento: " . $e->getMessage());
             Response::error($e->getMessage(), 500);
+        }
+    public function saveExtra(Request $request) {
+        require_login(['admin', 'enc_mat']);
+        
+        try {
+            $input = $request->getBody();
+            if (empty($input['data']) || empty($input['nome_guerra']) || empty($input['posto_grad'])) {
+                Response::error('Dados incompletos.', 400);
+            }
+            
+            $repo = new ArranchamentoRepository();
+            $repo->salvarExtra($input);
+            Response::json(null, "Arranchamento atualizado/salvo com sucesso.");
+        } catch (\Exception $e) {
+            error_log("[SISMIL] Erro ao salvar arranchamento extra: " . $e->getMessage());
+            Response::error('Erro interno do servidor.', 500);
         }
     }
 }

@@ -20,5 +20,18 @@ export const ArranchamentoService = {
       },
       body: JSON.stringify(payload)
     })
+  },
+
+  /**
+   * @param {Object} payload 
+   */
+  async saveExtra(payload) {
+    return apiFetchJson('/sismil/backend/api/arranchamento/saveExtra', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
   }
 }

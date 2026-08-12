@@ -86,4 +86,34 @@ class ArranchamentoRepository {
             throw $e;
         }
     }
+
+    public function salvarExtra(array $dados): void {
+        // Para o Furriel salvar "pessoas por fora" ou atualizar a refeição
+        $id = !empty($dados['id']) ? (int)$dados['id'] : null;
+        $data = $dados['data'];
+        $subunidade = $dados['subunidade'];
+        $posto_grad = $dados['posto_grad'];
+        $nome_guerra = $dados['nome_guerra'];
+        $cafe = (int)($dados['cafe'] ?? 0);
+        $almoco = (int)($dados['almoco'] ?? 0);
+        $jantar = (int)($dados['jantar'] ?? 0);
+        
+        if ($id) {
+            $stmt = $this->db->prepare("UPDATE tb_arranchamento SET cafe = ?, almoco = ?, jantar = ? WHERE id = ?");
+            $stmt->execute([$cafe, $almoco, $jantar, $id]);
+        } else {
+            // Verifica se já existe
+            $stmtCheck = $this->db->prepare("SELECT id FROM tb_arranchamento WHERE data_refeicao = ? AND subunidade = ? AND posto_grad = ? AND nome_guerra = ?");
+            $stmtCheck->execute([$data, $subunidade, $posto_grad, $nome_guerra]);
+            $row = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+            
+            if ($row) {
+                $stmt = $this->db->prepare("UPDATE tb_arranchamento SET cafe = ?, almoco = ?, jantar = ? WHERE id = ?");
+                $stmt->execute([$cafe, $almoco, $jantar, $row['id']]);
+            } else {
+                $stmt = $this->db->prepare("INSERT INTO tb_arranchamento (data_refeicao, subunidade, posto_grad, numero, nome_guerra, cafe, almoco, jantar, is_extra) VALUES (?, ?, ?, '', ?, ?, ?, ?, 1)");
+                $stmt->execute([$data, $subunidade, $posto_grad, $nome_guerra, $cafe, $almoco, $jantar]);
+            }
+        }
+    }
 }

@@ -18,6 +18,9 @@
           <button class="btn-modern btn-primary" @click="fetchData">
             <i class="fas fa-sync-alt"></i> Atualizar
           </button>
+          <button class="btn-modern btn-secondary" @click="openModalExtra">
+            <i class="fas fa-plus"></i> Adicionar Extra
+          </button>
         </div>
         <div class="actions">
           <a :href="`/sismil/backend/print_arranchamento.php?data=${selectedDate}`" target="_blank" class="btn-modern btn-success">
@@ -46,6 +49,13 @@
             <div class="stat-label">Almoço</div>
           </div>
         </div>
+        <div class="stat-card card-dark">
+          <div class="stat-icon"><i class="fas fa-moon"></i></div>
+          <div class="stat-body">
+            <div class="stat-number">{{ totais.jantar || 0 }}</div>
+            <div class="stat-label">Jantar</div>
+          </div>
+        </div>
         <div class="stat-card card-blue">
           <div class="stat-icon"><i class="fas fa-users"></i></div>
           <div class="stat-body">
@@ -68,6 +78,7 @@
                 <th>Nome de Guerra</th>
                 <th class="text-center">Café</th>
                 <th class="text-center">Almoço</th>
+                <th class="text-center">Jantar</th>
               </tr>
             </thead>
             <tbody>
@@ -76,12 +87,16 @@
                 <td>{{ r.posto_grad }}</td>
                 <td>{{ r.numero || '---' }}</td>
                 <td class="fw-bold">{{ r.nome_guerra }}</td>
-                <td class="text-center">
+                <td class="text-center" @click="toggleRefeicao(r, 'cafe')" style="cursor: pointer;">
                   <i v-if="r.cafe == 1" class="fas fa-check-circle text-success"></i>
                   <i v-else class="fas fa-minus text-muted"></i>
                 </td>
-                <td class="text-center">
+                <td class="text-center" @click="toggleRefeicao(r, 'almoco')" style="cursor: pointer;">
                   <i v-if="r.almoco == 1" class="fas fa-check-circle text-success"></i>
+                  <i v-else class="fas fa-minus text-muted"></i>
+                </td>
+                <td class="text-center" @click="toggleRefeicao(r, 'jantar')" style="cursor: pointer;">
+                  <i v-if="r.jantar == 1" class="fas fa-check-circle text-success"></i>
                   <i v-else class="fas fa-minus text-muted"></i>
                 </td>
               </tr>
@@ -93,6 +108,47 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal Adicionar Extra -->
+    <div v-if="showModalExtra" class="modal-overlay" @click.self="closeModalExtra">
+      <div class="modal-content glass-panel" style="max-width: 500px;">
+        <div class="modal-header">
+          <h5><i class="fas fa-plus-circle"></i> Adicionar Arranchado Extra</h5>
+          <button class="btn-close" @click="closeModalExtra">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="submitExtra">
+            <div class="mb-3">
+              <label>Nome / Identificação</label>
+              <input type="text" v-model="formExtra.nome_guerra" class="input-modern w-100" placeholder="Ex: Guarnição de Serviço" required>
+            </div>
+            <div class="mb-3">
+              <label>Posto/Graduação Contábil</label>
+              <select v-model="formExtra.posto_grad" class="input-modern w-100" required>
+                <option value="Cb">Cabo/Soldado (Contabiliza com Cb/Sd)</option>
+                <option value="3º Sgt">Sargento (Contabiliza com Of/Sgt)</option>
+                <option value="Civil">Civil / Outros (Não oficial)</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label>Refeições:</label>
+              <div class="d-flex" style="gap: 15px; margin-top: 10px;">
+                <label><input type="checkbox" v-model="formExtra.cafe"> Café</label>
+                <label><input type="checkbox" v-model="formExtra.almoco"> Almoço</label>
+                <label><input type="checkbox" v-model="formExtra.jantar"> Jantar</label>
+              </div>
+            </div>
+            <div class="mt-4 text-end">
+              <button type="button" class="btn-modern btn-secondary-outline me-2" @click="closeModalExtra">Cancelar</button>
+              <button type="submit" class="btn-modern btn-primary" :disabled="savingExtra">
+                {{ savingExtra ? 'Salvando...' : 'Salvar Extra' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -107,8 +163,15 @@ const today = new Date().toISOString().split('T')[0]
 const selectedDate = ref(today)
 const loading = ref(false)
 
-const totais = ref({ cafe: 0, almoco: 0 })
+const totais = ref({ cafe: 0, almoco: 0, jantar: 0 })
 const registros = ref([])
+
+const showModalExtra = ref(false)
+const savingExtra = ref(false)
+const formExtra = ref({ nome_guerra: '', posto_grad: 'Cb', cafe: false, almoco: false, jantar: false })
+
+const authStore = useAuthStore() // If needed for subunidade, but we can pass 'EXTRA'
+
 
 const formattedDate = computed(() => {
   if (!selectedDate.value) return ''
@@ -122,7 +185,7 @@ const fetchData = async () => {
   try {
     const json = await ArranchamentoService.getByData(selectedDate.value)
     if (json.status === 'sucesso' || json.registros) {
-      totais.value = json.totais || { cafe: 0, almoco: 0 }
+      totais.value = json.totais || { cafe: 0, almoco: 0, jantar: 0 }
       registros.value = json.registros || []
     } else {
       toastError("Erro: " + (json.msg || 'Erro desconhecido'))
@@ -131,6 +194,66 @@ const fetchData = async () => {
     toastError("Erro de conexão com o servidor.")
   } finally {
     loading.value = false
+  }
+}
+
+const toggleRefeicao = async (registro, tipo) => {
+  try {
+    const newValue = registro[tipo] == 1 ? 0 : 1;
+    // Update local immediately for UX
+    registro[tipo] = newValue;
+    
+    // Call backend
+    const payload = {
+      id: registro.id,
+      data: selectedDate.value,
+      subunidade: registro.subunidade,
+      posto_grad: registro.posto_grad,
+      nome_guerra: registro.nome_guerra,
+      cafe: registro.cafe,
+      almoco: registro.almoco,
+      jantar: registro.jantar
+    };
+    
+    await ArranchamentoService.saveExtra(payload);
+    useToast().success("Refeição atualizada.");
+    fetchData(); // Refresh totals
+  } catch(e) {
+    useToast().error("Erro ao atualizar refeição.");
+    fetchData(); // Revert UX change
+  }
+}
+
+const openModalExtra = () => {
+  formExtra.value = { nome_guerra: '', posto_grad: 'Cb', cafe: false, almoco: false, jantar: false }
+  showModalExtra.value = true
+}
+
+const closeModalExtra = () => {
+  showModalExtra.value = false
+}
+
+const submitExtra = async () => {
+  savingExtra.value = true;
+  const payload = {
+    data: selectedDate.value,
+    subunidade: 'EXTRA',
+    posto_grad: formExtra.value.posto_grad,
+    nome_guerra: formExtra.value.nome_guerra,
+    cafe: formExtra.value.cafe ? 1 : 0,
+    almoco: formExtra.value.almoco ? 1 : 0,
+    jantar: formExtra.value.jantar ? 1 : 0
+  }
+  
+  try {
+    await ArranchamentoService.saveExtra(payload)
+    useToast().success("Arranchado extra adicionado!")
+    closeModalExtra()
+    fetchData()
+  } catch(e) {
+    useToast().error("Erro ao salvar extra.")
+  } finally {
+    savingExtra.value = false
   }
 }
 
@@ -180,6 +303,14 @@ onMounted(() => {
 .table-modern th { background: #f8fafc; padding: 0.75rem 1rem; text-align: left; font-size: 0.8rem; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
 .table-modern td { padding: 0.75rem 1rem; border-bottom: 1px solid #f1f5f9; font-size: 0.88rem; }
 .table-modern tr:hover td { background: #f8fafc; }
+
+/* Modal Styles */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 1050; display: flex; align-items: center; justify-content: center; }
+.modal-content { background: white; border-radius: 12px; padding: 1.5rem; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; }
+.modal-header h5 { margin: 0; color: var(--primary-blue); font-weight: 700; }
+.btn-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b; }
+.btn-close:hover { color: #dc3545; }
 
 @media (max-width: 700px) {
   .summary-grid { grid-template-columns: 1fr; }
