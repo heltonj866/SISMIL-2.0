@@ -123,30 +123,38 @@
               <input type="text" v-model="formExtra.nome_guerra" class="input-modern w-100" placeholder="Ex: Guarnição de Serviço" required>
             </div>
             
-            <div class="row mb-3">
-              <div class="col-4">
-                <label>Oficiais</label>
+            <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+              <div style="flex: 1;">
+                <label style="display: block; font-weight: 600; margin-bottom: 5px;">Oficiais</label>
                 <input type="number" v-model="formExtra.qtd_oficiais" class="input-modern w-100" min="0">
               </div>
-              <div class="col-4">
-                <label>Sargentos</label>
+              <div style="flex: 1;">
+                <label style="display: block; font-weight: 600; margin-bottom: 5px;">Sargentos</label>
                 <input type="number" v-model="formExtra.qtd_sargentos" class="input-modern w-100" min="0">
               </div>
-              <div class="col-4">
-                <label>Cb/Sd</label>
+              <div style="flex: 1;">
+                <label style="display: block; font-weight: 600; margin-bottom: 5px;">Cb/Sd</label>
                 <input type="number" v-model="formExtra.qtd_cbsd" class="input-modern w-100" min="0">
               </div>
             </div>
-            <div class="mb-3">
-              <label>Refeições:</label>
-              <div class="d-flex" style="gap: 15px; margin-top: 10px;">
-                <label><input type="checkbox" v-model="formExtra.cafe"> Café</label>
-                <label><input type="checkbox" v-model="formExtra.almoco"> Almoço</label>
-                <label><input type="checkbox" v-model="formExtra.jantar"> Jantar</label>
+            
+            <div style="margin-bottom: 20px;">
+              <label style="display: block; font-weight: 600; margin-bottom: 8px;">Refeições:</label>
+              <div style="display: flex; gap: 20px;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                  <input type="checkbox" v-model="formExtra.cafe" style="width: 18px; height: 18px;"> Café
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                  <input type="checkbox" v-model="formExtra.almoco" style="width: 18px; height: 18px;"> Almoço
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                  <input type="checkbox" v-model="formExtra.jantar" style="width: 18px; height: 18px;"> Jantar
+                </label>
               </div>
             </div>
-            <div class="mt-4 text-end">
-              <button type="button" class="btn-modern btn-secondary-outline me-2" @click="closeModalExtra">Cancelar</button>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px;">
+              <button type="button" class="btn-modern btn-secondary-outline" style="background: #f1f5f9; color: #475569;" @click="closeModalExtra">Cancelar</button>
               <button type="submit" class="btn-modern btn-primary" :disabled="savingExtra">
                 {{ savingExtra ? 'Salvando...' : 'Salvar Extra' }}
               </button>
