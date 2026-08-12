@@ -9,14 +9,6 @@ apply_cors();
 // Autoload manual temporário (ou via security.php se já estiver lá)
 require_once __DIR__ . '/src/Core/Request.php';
 require_once __DIR__ . '/src/Core/Response.php';
-require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/vendor/autoload.php';
-
-try {
-    $db = \Sismil\Core\Database::getInstance();
-    $db->exec("ALTER TABLE tb_arranchamento ADD COLUMN jantar TINYINT(1) DEFAULT 0 AFTER almoco");
-    $db->exec("ALTER TABLE tb_arranchamento ADD COLUMN is_extra TINYINT(1) DEFAULT 0 AFTER jantar");
-} catch (\Throwable $e) {}
 
 require_once __DIR__ . '/src/Core/Router.php';
 require_once __DIR__ . '/src/Core/Database.php';
