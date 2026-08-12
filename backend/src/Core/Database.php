@@ -56,6 +56,10 @@ class Database {
                     self::$instance->exec("ALTER TABLE tb_arranchamento ADD COLUMN is_extra TINYINT(1) DEFAULT 0 AFTER jantar");
                 } catch (PDOException $e) {}
                 
+                try {
+                    self::$instance->exec("ALTER TABLE tb_arranchamento ADD COLUMN quantidade INT DEFAULT 1 AFTER is_extra");
+                } catch (PDOException $e) {}
+                
             } catch (PDOException $e) {
                 // Nunca expõe os detalhes da conexão PDO para o cliente
                 error_log("Database Connection Error: " . $e->getMessage());

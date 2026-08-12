@@ -119,16 +119,23 @@
         <div class="modal-body">
           <form @submit.prevent="submitExtra">
             <div class="mb-3">
-              <label>Nome / Identificação</label>
+              <label>Nome da Atividade / Equipe</label>
               <input type="text" v-model="formExtra.nome_guerra" class="input-modern w-100" placeholder="Ex: Guarnição de Serviço" required>
             </div>
-            <div class="mb-3">
-              <label>Posto/Graduação Contábil</label>
-              <select v-model="formExtra.posto_grad" class="input-modern w-100" required>
-                <option value="Cb">Cabo/Soldado (Contabiliza com Cb/Sd)</option>
-                <option value="3º Sgt">Sargento (Contabiliza com Of/Sgt)</option>
-                <option value="Civil">Civil / Outros (Não oficial)</option>
-              </select>
+            
+            <div class="row mb-3">
+              <div class="col-4">
+                <label>Oficiais</label>
+                <input type="number" v-model="formExtra.qtd_oficiais" class="input-modern w-100" min="0">
+              </div>
+              <div class="col-4">
+                <label>Sargentos</label>
+                <input type="number" v-model="formExtra.qtd_sargentos" class="input-modern w-100" min="0">
+              </div>
+              <div class="col-4">
+                <label>Cb/Sd</label>
+                <input type="number" v-model="formExtra.qtd_cbsd" class="input-modern w-100" min="0">
+              </div>
             </div>
             <div class="mb-3">
               <label>Refeições:</label>
@@ -168,7 +175,7 @@ const registros = ref([])
 
 const showModalExtra = ref(false)
 const savingExtra = ref(false)
-const formExtra = ref({ nome_guerra: '', posto_grad: 'Cb', cafe: false, almoco: false, jantar: false })
+const formExtra = ref({ nome_guerra: '', qtd_oficiais: 0, qtd_sargentos: 0, qtd_cbsd: 0, cafe: false, almoco: false, jantar: false })
 
 const formattedDate = computed(() => {
   if (!selectedDate.value) return ''
@@ -222,7 +229,7 @@ const toggleRefeicao = async (registro, tipo) => {
 }
 
 const openModalExtra = () => {
-  formExtra.value = { nome_guerra: '', posto_grad: 'Cb', cafe: false, almoco: false, jantar: false }
+  formExtra.value = { nome_guerra: '', qtd_oficiais: 0, qtd_sargentos: 0, qtd_cbsd: 0, cafe: false, almoco: false, jantar: false }
   showModalExtra.value = true
 }
 
@@ -232,18 +239,29 @@ const closeModalExtra = () => {
 
 const submitExtra = async () => {
   savingExtra.value = true;
-  const payload = {
+  
+  const items = [];
+  const base = {
     data: selectedDate.value,
     subunidade: 'EXTRA',
-    posto_grad: formExtra.value.posto_grad,
     nome_guerra: formExtra.value.nome_guerra,
     cafe: formExtra.value.cafe ? 1 : 0,
     almoco: formExtra.value.almoco ? 1 : 0,
     jantar: formExtra.value.jantar ? 1 : 0
+  };
+
+  if (formExtra.value.qtd_oficiais > 0) items.push({ ...base, posto_grad: 'Maj', quantidade: formExtra.value.qtd_oficiais });
+  if (formExtra.value.qtd_sargentos > 0) items.push({ ...base, posto_grad: '3º Sgt', quantidade: formExtra.value.qtd_sargentos });
+  if (formExtra.value.qtd_cbsd > 0) items.push({ ...base, posto_grad: 'Cb', quantidade: formExtra.value.qtd_cbsd });
+
+  if (items.length === 0) {
+      useToast().error("Informe a quantidade de pelo menos uma graduação!");
+      savingExtra.value = false;
+      return;
   }
   
   try {
-    await ArranchamentoService.saveExtra(payload)
+    await ArranchamentoService.saveExtra({ is_batch: true, items: items })
     useToast().success("Arranchado extra adicionado!")
     closeModalExtra()
     fetchData()
@@ -277,7 +295,7 @@ onMounted(() => {
   display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;
   padding-bottom: 1.5rem; border-bottom: 2px solid #f1f5f9;
 }
-.date-selector { display: flex; align-items: flex-end; gap: 0.75rem; }
+.date-selector { display: flex; align-items: flex-end; gap: 0.75rem; flex-wrap: wrap; }
 .date-selector label { display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 0.4rem; }
 
 .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; }
@@ -288,6 +306,7 @@ onMounted(() => {
 .card-amber { background: linear-gradient(135deg, #d97706, #f59e0b); }
 .card-green { background: linear-gradient(135deg, #16a34a, #22c55e); }
 .card-blue  { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+.card-dark  { background: linear-gradient(135deg, #1e293b, #334155); }
 .stat-icon { font-size: 2rem; opacity: 0.8; }
 .stat-number { font-size: 1.8rem; font-weight: 800; line-height: 1; }
 .stat-label { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-top: 0.25rem; opacity: 0.9; }

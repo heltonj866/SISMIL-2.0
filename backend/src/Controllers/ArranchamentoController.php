@@ -27,9 +27,11 @@ class ArranchamentoController {
             $total_almoco = 0;
             $total_jantar = 0;
             foreach ($registros as $r) {
-                if ($r['cafe']) $total_cafe++;
-                if ($r['almoco']) $total_almoco++;
-                if ($r['jantar']) $total_jantar++;
+                $qtd = isset($r['quantidade']) ? (int)$r['quantidade'] : 1;
+                if ($qtd < 1) $qtd = 1;
+                if ($r['cafe']) $total_cafe += $qtd;
+                if ($r['almoco']) $total_almoco += $qtd;
+                if ($r['jantar']) $total_jantar += $qtd;
             }
             
             Response::json([
@@ -72,12 +74,21 @@ class ArranchamentoController {
         
         try {
             $input = $request->getBody();
-            if (empty($input['data']) || empty($input['nome_guerra']) || empty($input['posto_grad'])) {
-                Response::error('Dados incompletos.', 400);
+            $repo = new ArranchamentoRepository();
+            
+            if (!empty($input['is_batch']) && is_array($input['items'])) {
+                foreach ($input['items'] as $item) {
+                    if (!empty($item['quantidade']) && (int)$item['quantidade'] > 0) {
+                        $repo->salvarExtra($item);
+                    }
+                }
+            } else {
+                if (empty($input['data']) || empty($input['nome_guerra']) || empty($input['posto_grad'])) {
+                    Response::error('Dados incompletos.', 400);
+                }
+                $repo->salvarExtra($input);
             }
             
-            $repo = new ArranchamentoRepository();
-            $repo->salvarExtra($input);
             Response::json(null, "Arranchamento atualizado/salvo com sucesso.");
         } catch (\Exception $e) {
             error_log("[SISMIL] Erro ao salvar arranchamento extra: " . $e->getMessage());

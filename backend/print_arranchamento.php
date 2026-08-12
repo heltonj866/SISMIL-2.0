@@ -45,11 +45,18 @@ function renderTable($title, $registros) {
             $almoco = $r['almoco'] ? 'X' : '';
             $jantar = isset($r['jantar']) && $r['jantar'] ? 'X' : '';
             $num = $r['numero'] ? h($r['numero']) : '---';
+            
+            $nome = h($r['nome_guerra']);
+            $qtd = isset($r['quantidade']) ? (int)$r['quantidade'] : 1;
+            if ($qtd > 1) {
+                $nome .= " <strong>(Qtd: $qtd)</strong>";
+            }
+
             echo "<tr>
                     <td style='text-align:center;'>" . h($r['subunidade']) . "</td>
                     <td style='text-align:center;'>" . h($r['posto_grad']) . "</td>
                     <td style='text-align:center;'>" . $num . "</td>
-                    <td>" . h($r['nome_guerra']) . "</td>
+                    <td>" . $nome . "</td>
                     <td style='text-align:center; font-weight:bold;'>" . h($cafe) . "</td>
                     <td style='text-align:center; font-weight:bold;'>" . h($almoco) . "</td>
                     <td style='text-align:center; font-weight:bold;'>" . h($jantar) . "</td>
@@ -84,6 +91,7 @@ function renderTable($title, $registros) {
         @media print { 
             body { background: white; } 
             .page { margin: 0; padding: 10mm; box-shadow: none; } 
+            .page-break { page-break-after: always; break-after: page; }
             .no-print { display: none; } 
         }
     </style>
@@ -113,22 +121,28 @@ function renderTable($title, $registros) {
     $st_sgt_c = 0; $st_sgt_a = 0; $st_sgt_j = 0;
     
     foreach ($ofSgt as $r) {
+        $qtd = isset($r['quantidade']) ? (int)$r['quantidade'] : 1;
+        if ($qtd < 1) $qtd = 1;
+        
         if (in_array($r['posto_grad'], ['Cel', 'Ten Cel', 'Maj', 'Cap', '1º Ten', '2º Ten', 'Asp'])) {
-            if ($r['cafe']) $oficiais_c++;
-            if ($r['almoco']) $oficiais_a++;
-            if (isset($r['jantar']) && $r['jantar']) $oficiais_j++;
+            if ($r['cafe']) $oficiais_c += $qtd;
+            if ($r['almoco']) $oficiais_a += $qtd;
+            if (isset($r['jantar']) && $r['jantar']) $oficiais_j += $qtd;
         } else {
-            if ($r['cafe']) $st_sgt_c++;
-            if ($r['almoco']) $st_sgt_a++;
-            if (isset($r['jantar']) && $r['jantar']) $st_sgt_j++;
+            if ($r['cafe']) $st_sgt_c += $qtd;
+            if ($r['almoco']) $st_sgt_a += $qtd;
+            if (isset($r['jantar']) && $r['jantar']) $st_sgt_j += $qtd;
         }
     }
 
     $cbsd_c = 0; $cbsd_a = 0; $cbsd_j = 0;
     foreach ($cbSd as $r) {
-        if ($r['cafe']) $cbsd_c++;
-        if ($r['almoco']) $cbsd_a++;
-        if (isset($r['jantar']) && $r['jantar']) $cbsd_j++;
+        $qtd = isset($r['quantidade']) ? (int)$r['quantidade'] : 1;
+        if ($qtd < 1) $qtd = 1;
+        
+        if ($r['cafe']) $cbsd_c += $qtd;
+        if ($r['almoco']) $cbsd_a += $qtd;
+        if (isset($r['jantar']) && $r['jantar']) $cbsd_j += $qtd;
     }
 
     $soma_c = $oficiais_c + $st_sgt_c + $cbsd_c;
@@ -233,9 +247,12 @@ function renderTable($title, $registros) {
             </div>
         </div>
     </div>
+</div>
 
-    <!-- QUEBRA DE PÁGINA APÓS A CAPA -->
-    <div style="page-break-after: always;"></div>
+<!-- QUEBRA DE PÁGINA APÓS A CAPA -->
+<div class="page-break"></div>
+
+<div class="page">
 
     <?php 
     renderTable("Oficiais, Subtenentes e Sargentos", $ofSgt); 
