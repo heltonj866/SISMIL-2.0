@@ -36,28 +36,24 @@
       </div>
       <div v-else class="summary-grid mt-4">
         <div class="stat-card card-amber">
-          <div class="stat-icon"><i class="fas fa-coffee"></i></div>
           <div class="stat-body">
             <div class="stat-number">{{ totais.cafe }}</div>
             <div class="stat-label">Café da Manhã</div>
           </div>
         </div>
         <div class="stat-card card-green">
-          <div class="stat-icon"><i class="fas fa-utensils"></i></div>
           <div class="stat-body">
             <div class="stat-number">{{ totais.almoco }}</div>
             <div class="stat-label">Almoço</div>
           </div>
         </div>
         <div class="stat-card card-dark">
-          <div class="stat-icon">🌙</div>
           <div class="stat-body">
             <div class="stat-number">{{ totais.jantar || 0 }}</div>
             <div class="stat-label">Jantar</div>
           </div>
         </div>
         <div class="stat-card card-blue">
-          <div class="stat-icon">👥</div>
           <div class="stat-body">
             <div class="stat-number">{{ registros.length }}</div>
             <div class="stat-label">Militares Arranchados</div>
