@@ -51,14 +51,9 @@ class Database {
                 ]);
 
                 // Auto-migration silenciosa para adicionar colunas de arranchamento
-                try {
-                    self::$instance->exec("ALTER TABLE tb_arranchamento ADD COLUMN jantar TINYINT(1) DEFAULT 0 AFTER almoco");
-                    self::$instance->exec("ALTER TABLE tb_arranchamento ADD COLUMN is_extra TINYINT(1) DEFAULT 0 AFTER jantar");
-                } catch (PDOException $e) {}
-                
-                try {
-                    self::$instance->exec("ALTER TABLE tb_arranchamento ADD COLUMN quantidade INT DEFAULT 1 AFTER is_extra");
-                } catch (PDOException $e) {}
+                try { self::$instance->exec("ALTER TABLE tb_arranchamento ADD COLUMN jantar TINYINT(1) DEFAULT 0 AFTER almoco"); } catch (PDOException $e) {}
+                try { self::$instance->exec("ALTER TABLE tb_arranchamento ADD COLUMN is_extra TINYINT(1) DEFAULT 0 AFTER jantar"); } catch (PDOException $e) {}
+                try { self::$instance->exec("ALTER TABLE tb_arranchamento ADD COLUMN quantidade INT DEFAULT 1 AFTER is_extra"); } catch (PDOException $e) {}
                 
             } catch (PDOException $e) {
                 // Nunca expõe os detalhes da conexão PDO para o cliente
