@@ -233,16 +233,16 @@ function renderTable($title, $registros) {
             </tr>
         </table>
 
-        <div style="display: flex; justify-content: space-between; margin-top: 50px; text-align: center; font-weight: bold;">
-            <div style="width: 33%; text-align: left; padding-left: 20px;">
+        <div style="display: flex; justify-content: space-between; margin-top: 60px; text-align: center; font-weight: bold;">
+            <div style="width: 30%; text-align: left; padding-left: 20px;">
                 <p style="text-transform: uppercase;"><?php echo h($nomeDia) . ' ' . h($dataBr); ?></p>
             </div>
-            <div style="width: 33%;">
-                <p>___________________________</p>
+            <div style="width: 30%;">
+                <p>_______________________</p>
                 <p>Furriel <?php echo $subunidade_text; ?></p>
             </div>
-            <div style="width: 33%;">
-                <p>___________________________</p>
+            <div style="width: 30%;">
+                <p>_______________________</p>
                 <p>Cmt <?php echo $subunidade_text; ?></p>
             </div>
         </div>
@@ -261,7 +261,7 @@ function renderTable($title, $registros) {
     
     <div style="margin-top: 50px; text-align: center;">
         <p>___________________________________________________</p>
-        <p style="font-weight: bold; font-size: 14px;">FISCAL DE DIA / ENCARREGADO DE MATERIAL</p>
+        <p style="font-weight: bold; font-size: 14px;">RESP. TIRAGEM DE FALTAS</p>
         <p style="font-size: 12px; color: #555;">Impresso pelo SISMIL em <?php echo date('d/m/Y H:i'); ?></p>
     </div>
 </div>
