@@ -119,7 +119,12 @@
         <div class="modal-body">
           <form @submit.prevent="submitExtra">
             <div class="mb-3">
-              <label>Nome da Atividade / Equipe</label>
+              <label style="display: block; font-weight: 600; margin-bottom: 5px;">Data do Arranchamento</label>
+              <input type="date" v-model="formExtra.data" class="input-modern w-100" required>
+            </div>
+            
+            <div class="mb-3">
+              <label style="display: block; font-weight: 600; margin-bottom: 5px;">Nome da Atividade / Equipe</label>
               <input type="text" v-model="formExtra.nome_guerra" class="input-modern w-100" placeholder="Ex: Guarnição de Serviço" required>
             </div>
             
@@ -170,9 +175,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from '../composables/useToast'
+import { useAuthStore } from '../stores/auth'
 import { ArranchamentoService } from '@/services/ArranchamentoService'
 
 const { error: toastError } = useToast()
+const authStore = useAuthStore()
 
 const today = new Date().toISOString().split('T')[0]
 const selectedDate = ref(today)
@@ -183,7 +190,7 @@ const registros = ref([])
 
 const showModalExtra = ref(false)
 const savingExtra = ref(false)
-const formExtra = ref({ nome_guerra: '', qtd_oficiais: 0, qtd_sargentos: 0, qtd_cbsd: 0, cafe: false, almoco: false, jantar: false })
+const formExtra = ref({ data: '', nome_guerra: '', qtd_oficiais: 0, qtd_sargentos: 0, qtd_cbsd: 0, cafe: false, almoco: false, jantar: false })
 
 const formattedDate = computed(() => {
   if (!selectedDate.value) return ''
@@ -237,7 +244,7 @@ const toggleRefeicao = async (registro, tipo) => {
 }
 
 const openModalExtra = () => {
-  formExtra.value = { nome_guerra: '', qtd_oficiais: 0, qtd_sargentos: 0, qtd_cbsd: 0, cafe: false, almoco: false, jantar: false }
+  formExtra.value = { data: selectedDate.value, nome_guerra: '', qtd_oficiais: 0, qtd_sargentos: 0, qtd_cbsd: 0, cafe: false, almoco: false, jantar: false }
   showModalExtra.value = true
 }
 
@@ -250,8 +257,8 @@ const submitExtra = async () => {
   
   const items = [];
   const base = {
-    data: selectedDate.value,
-    subunidade: 'EXTRA',
+    data: formExtra.value.data,
+    subunidade: authStore.user?.subunidade || 'EXTRA',
     nome_guerra: formExtra.value.nome_guerra,
     cafe: formExtra.value.cafe ? 1 : 0,
     almoco: formExtra.value.almoco ? 1 : 0,
