@@ -76,8 +76,14 @@ class ArranchamentoController {
             $input = $request->getBody();
             $repo = new ArranchamentoRepository();
             
+            $role = $_SESSION['usuario_role'] ?? '';
+            $user_sub = $_SESSION['usuario_sub'] ?? '';
+            
             if (!empty($input['is_batch']) && is_array($input['items'])) {
                 foreach ($input['items'] as $item) {
+                    if ($role === 'enc_mat' && !empty($user_sub)) {
+                        $item['subunidade'] = $user_sub;
+                    }
                     if (!empty($item['quantidade']) && (int)$item['quantidade'] > 0) {
                         $repo->salvarExtra($item);
                     }
@@ -85,6 +91,9 @@ class ArranchamentoController {
             } else {
                 if (empty($input['data']) || empty($input['nome_guerra']) || empty($input['posto_grad'])) {
                     Response::error('Dados incompletos.', 400);
+                }
+                if ($role === 'enc_mat' && !empty($user_sub)) {
+                    $input['subunidade'] = $user_sub;
                 }
                 $repo->salvarExtra($input);
             }
