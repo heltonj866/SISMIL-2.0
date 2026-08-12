@@ -170,9 +170,6 @@ const showModalExtra = ref(false)
 const savingExtra = ref(false)
 const formExtra = ref({ nome_guerra: '', posto_grad: 'Cb', cafe: false, almoco: false, jantar: false })
 
-const authStore = useAuthStore() // If needed for subunidade, but we can pass 'EXTRA'
-
-
 const formattedDate = computed(() => {
   if (!selectedDate.value) return ''
   const [y, m, d] = selectedDate.value.split('-')
