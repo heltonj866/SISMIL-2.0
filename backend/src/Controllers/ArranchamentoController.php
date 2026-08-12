@@ -65,6 +65,8 @@ class ArranchamentoController {
             error_log("[SISMIL] Erro ao salvar arranchamento: " . $e->getMessage());
             Response::error($e->getMessage(), 500);
         }
+    }
+    
     public function saveExtra(Request $request) {
         require_login(['admin', 'enc_mat']);
         
