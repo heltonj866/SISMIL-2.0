@@ -33,13 +33,13 @@ class ArranchamentoRepository {
 
         $sqlOfSgt = "SELECT * FROM tb_arranchamento 
                      WHERE data_refeicao = ?" . $sqlFilter . " 
-                     AND posto_grad IN ('Cel', 'Ten Cel', 'Maj', 'Cap', '1º Ten', '2º Ten', 'Asp', 'Subten', 'Sub Ten', '1º Sgt', '2º Sgt', '3º Sgt')
-                     ORDER BY FIELD(posto_grad, 'Cel', 'Ten Cel', 'Maj', 'Cap', '1º Ten', '2º Ten', 'Asp', 'Subten', 'Sub Ten', '1º Sgt', '2º Sgt', '3º Sgt'), nome_guerra ASC";
+                     AND posto_grad IN ('Cel', 'Ten Cel', 'Maj', 'Cap', '1º Ten', '2º Ten', 'Asp', 'Subten', 'Sub Ten', '1º Sgt', '2º Sgt', '3º Sgt', 'Oficial', 'Sargento')
+                     ORDER BY FIELD(posto_grad, 'Cel', 'Ten Cel', 'Maj', 'Cap', '1º Ten', '2º Ten', 'Asp', 'Oficial', 'Subten', 'Sub Ten', '1º Sgt', '2º Sgt', '3º Sgt', 'Sargento'), nome_guerra ASC";
 
         $sqlCbSd = "SELECT * FROM tb_arranchamento 
                     WHERE data_refeicao = ?" . $sqlFilter . " 
-                    AND posto_grad IN ('Cb', 'Sd EP', 'Sd EV', 'SC', 'Sd')
-                    ORDER BY FIELD(posto_grad, 'Cb', 'Sd EP', 'Sd EV', 'SC', 'Sd'), CAST(numero AS UNSIGNED) ASC, nome_guerra ASC";
+                    AND posto_grad IN ('Cb', 'Sd EP', 'Sd EV', 'SC', 'Sd', 'Cabo/Soldado')
+                    ORDER BY FIELD(posto_grad, 'Cb', 'Sd EP', 'Sd EV', 'SC', 'Sd', 'Cabo/Soldado'), CAST(numero AS UNSIGNED) ASC, nome_guerra ASC";
 
         $stmt1 = $this->db->prepare($sqlOfSgt);
         $stmt1->execute($params);

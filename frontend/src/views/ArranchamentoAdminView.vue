@@ -86,7 +86,10 @@
                 <td><span class="badge-sub">{{ r.subunidade }}</span></td>
                 <td>{{ r.posto_grad }}</td>
                 <td>{{ r.numero || '---' }}</td>
-                <td class="fw-bold">{{ r.nome_guerra }}</td>
+                <td class="fw-bold">
+                  {{ r.nome_guerra }}
+                  <span v-if="r.quantidade > 1" class="badge bg-secondary ms-2">Qtd: {{ r.quantidade }}</span>
+                </td>
                 <td class="text-center" @click="toggleRefeicao(r, 'cafe')" style="cursor: pointer;">
                   <i v-if="r.cafe == 1" class="fas fa-check-circle text-success"></i>
                   <i v-else class="fas fa-minus text-muted"></i>
@@ -265,9 +268,9 @@ const submitExtra = async () => {
     jantar: formExtra.value.jantar ? 1 : 0
   };
 
-  if (formExtra.value.qtd_oficiais > 0) items.push({ ...base, posto_grad: 'Maj', quantidade: formExtra.value.qtd_oficiais });
-  if (formExtra.value.qtd_sargentos > 0) items.push({ ...base, posto_grad: '3º Sgt', quantidade: formExtra.value.qtd_sargentos });
-  if (formExtra.value.qtd_cbsd > 0) items.push({ ...base, posto_grad: 'Cb', quantidade: formExtra.value.qtd_cbsd });
+  if (formExtra.value.qtd_oficiais > 0) items.push({ ...base, posto_grad: 'Oficial', quantidade: formExtra.value.qtd_oficiais });
+  if (formExtra.value.qtd_sargentos > 0) items.push({ ...base, posto_grad: 'Sargento', quantidade: formExtra.value.qtd_sargentos });
+  if (formExtra.value.qtd_cbsd > 0) items.push({ ...base, posto_grad: 'Cabo/Soldado', quantidade: formExtra.value.qtd_cbsd });
 
   if (items.length === 0) {
       useToast().error("Informe a quantidade de pelo menos uma graduação!");
