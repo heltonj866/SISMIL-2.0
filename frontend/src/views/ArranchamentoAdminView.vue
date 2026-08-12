@@ -50,14 +50,14 @@
           </div>
         </div>
         <div class="stat-card card-dark">
-          <div class="stat-icon"><i class="fas fa-moon"></i></div>
+          <div class="stat-icon">🌙</div>
           <div class="stat-body">
             <div class="stat-number">{{ totais.jantar || 0 }}</div>
             <div class="stat-label">Jantar</div>
           </div>
         </div>
         <div class="stat-card card-blue">
-          <div class="stat-icon"><i class="fas fa-users"></i></div>
+          <div class="stat-icon">👥</div>
           <div class="stat-body">
             <div class="stat-number">{{ registros.length }}</div>
             <div class="stat-label">Militares Arranchados</div>
@@ -91,16 +91,16 @@
                   <span v-if="r.quantidade > 1" class="badge bg-secondary ms-2">Qtd: {{ r.quantidade }}</span>
                 </td>
                 <td class="text-center" @click="toggleRefeicao(r, 'cafe')" style="cursor: pointer;">
-                  <i v-if="r.cafe == 1" class="fas fa-check-circle text-success"></i>
-                  <i v-else class="fas fa-minus text-muted"></i>
+                  <span v-if="r.cafe == 1" class="text-success" style="font-size: 1.2rem;">✔️</span>
+                  <span v-else class="text-muted" style="font-size: 1.2rem;">➖</span>
                 </td>
                 <td class="text-center" @click="toggleRefeicao(r, 'almoco')" style="cursor: pointer;">
-                  <i v-if="r.almoco == 1" class="fas fa-check-circle text-success"></i>
-                  <i v-else class="fas fa-minus text-muted"></i>
+                  <span v-if="r.almoco == 1" class="text-success" style="font-size: 1.2rem;">✔️</span>
+                  <span v-else class="text-muted" style="font-size: 1.2rem;">➖</span>
                 </td>
                 <td class="text-center" @click="toggleRefeicao(r, 'jantar')" style="cursor: pointer;">
-                  <i v-if="r.jantar == 1" class="fas fa-check-circle text-success"></i>
-                  <i v-else class="fas fa-minus text-muted"></i>
+                  <span v-if="r.jantar == 1" class="text-success" style="font-size: 1.2rem;">✔️</span>
+                  <span v-else class="text-muted" style="font-size: 1.2rem;">➖</span>
                 </td>
               </tr>
               <tr v-if="registros.length === 0">
@@ -116,7 +116,7 @@
     <div v-if="showModalExtra" class="modal-overlay" @click.self="closeModalExtra">
       <div class="modal-content glass-panel" style="max-width: 500px;">
         <div class="modal-header">
-          <h5><i class="fas fa-plus-circle"></i> Adicionar Arranchado Extra</h5>
+          <h5>➕ Adicionar Arranchado Extra</h5>
           <button class="btn-close" @click="closeModalExtra">&times;</button>
         </div>
         <div class="modal-body">
