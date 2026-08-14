@@ -33,7 +33,7 @@
             <td>
               <!-- CRLV visivel para todos -->
               <a v-if="v.pdf_veiculo"
-                :href="`/sismil/uploads/documentos/${v.pdf_veiculo}`"
+                :href="`/sismil/uploads/${v.pdf_veiculo}`"
                 target="_blank"
                 class="btn-ver-doc"
                 title="Abrir CRLV"
@@ -114,7 +114,7 @@
           <label>CRLV (PDF)</label>
           <input type="file" @change="handleFile" accept="application/pdf" class="input-modern">
           <small class="text-muted mt-1 d-block" v-if="form.id && veiculos.find(v=>v.id===form.id)?.pdf_veiculo">
-            <a :href="`/sismil/uploads/documentos/${veiculos.find(v=>v.id===form.id)?.pdf_veiculo}`" target="_blank" class="doc-link">
+            <a :href="`/sismil/uploads/${veiculos.find(v=>v.id===form.id)?.pdf_veiculo}`" target="_blank" class="doc-link">
               <i class="fas fa-file-pdf"></i> Ver CRLV atual
             </a>
           </small>
@@ -220,15 +220,15 @@ const salvar = async () => {
   if (!form.value.placa || !form.value.modelo) { toastWarning('Placa e modelo são obrigatórios'); return }
   loading.value = true
   const fd = new FormData()
-  fd.append('v_militar_id', props.militarId)
-  fd.append('v_tipo', form.value.tipo)
-  fd.append('v_placa', form.value.placa)
-  fd.append('v_cor', form.value.cor)
-  fd.append('v_marca', form.value.marca)
-  fd.append('v_modelo', form.value.modelo)
-  fd.append('v_emissao', form.value.emissao)
-  if (form.value.id) fd.append('veiculo_id', form.value.id)
-  if (file.value) fd.append('v_pdf', file.value)
+  fd.append('militar_id', props.militarId)
+  fd.append('tipo_veiculo', form.value.tipo)
+  fd.append('placa', form.value.placa)
+  fd.append('cor', form.value.cor)
+  fd.append('marca', form.value.marca)
+  fd.append('modelo', form.value.modelo)
+  fd.append('emissao_crlv', form.value.emissao || '')
+  if (form.value.id) fd.append('id', form.value.id)
+  if (file.value) fd.append('pdf_veiculo', file.value)
 
   try {
     const json = await VeiculoService.save(fd)

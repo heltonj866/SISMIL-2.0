@@ -241,7 +241,7 @@
               </label>
               <!-- Link para visualizar CNH (TODOS os roles quando existe) -->
               <div v-if="dadosCompletos?.pdf_habilitacao" class="cnh-link-box">
-                <a :href="`/sismil/uploads/documentos/${dadosCompletos.pdf_habilitacao}`" target="_blank" class="doc-link-big">
+                <a :href="`/sismil/uploads/${dadosCompletos.pdf_habilitacao}`" target="_blank" class="doc-link-big">
                   <i class="fas fa-file-pdf fa-lg"></i>
                   <span>Visualizar CNH Anexada</span>
                 </a>
@@ -592,7 +592,7 @@ const handleSave = async () => {
   for (const key in form.value) fd.append(key, form.value[key])
   if (fileUploads.value.foto) fd.append('foto', fileUploads.value.foto)
   if (fileUploads.value.nada_consta) fd.append('pdf_nada_consta', fileUploads.value.nada_consta)
-  if (fileUploads.value.pdf_habilitacao) fd.append('pdf_habilitacao', fileUploads.value.pdf_habilitacao)
+  if (fileUploads.value.pdf_habilitacao) fd.append('pdf_cnh', fileUploads.value.pdf_habilitacao)
   try {
     const json = await MilitarService.save(fd)
     if (json.status === 'sucesso' || json.id) {
