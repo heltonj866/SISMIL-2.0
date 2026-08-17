@@ -25,8 +25,9 @@ try {
         $resultado = $repo->getRelatorioImpressao($data);
     }
     
-    $ofSgt = $resultado['ofSgt'];
-    $cbSd = $resultado['cbSd'];
+    $ofSgt   = $resultado['ofSgt'];
+    $cbSd    = $resultado['cbSd'];
+    $extras  = $resultado['extras'];
 } catch (\Exception $e) {
     error_log("[SISMIL] Erro ao carregar arranchamento para impressão: " . $e->getMessage());
     die("Ocorreu um erro interno ao carregar a planilha de arranchamento.");
@@ -116,10 +117,12 @@ function renderTable($title, $registros) {
     </div>
 
     <?php
-    // Calculate totals for cover page
+    // Inicializar totais
     $oficiais_c = 0; $oficiais_a = 0; $oficiais_j = 0;
-    $st_sgt_c = 0; $st_sgt_a = 0; $st_sgt_j = 0;
-    
+    $st_sgt_c   = 0; $st_sgt_a   = 0; $st_sgt_j   = 0;
+    $cbsd_c     = 0; $cbsd_a     = 0; $cbsd_j     = 0;
+
+    // Contagem dos registros normais
     foreach ($ofSgt as $r) {
         $qtd = isset($r['quantidade']) ? (int)$r['quantidade'] : 1;
         if ($qtd < 1) $qtd = 1;
@@ -135,14 +138,35 @@ function renderTable($title, $registros) {
         }
     }
 
-    $cbsd_c = 0; $cbsd_a = 0; $cbsd_j = 0;
     foreach ($cbSd as $r) {
         $qtd = isset($r['quantidade']) ? (int)$r['quantidade'] : 1;
         if ($qtd < 1) $qtd = 1;
-        
         if ($r['cafe']) $cbsd_c += $qtd;
         if ($r['almoco']) $cbsd_a += $qtd;
         if (isset($r['jantar']) && $r['jantar']) $cbsd_j += $qtd;
+    }
+
+    // Contagem dos extras (separada, com bucket correto)
+    foreach ($extras as $r) {
+        $qtd = isset($r['quantidade']) ? (int)$r['quantidade'] : 1;
+        if ($qtd < 1) $qtd = 1;
+
+        if ($r['posto_grad'] === 'Oficial' ||
+            in_array($r['posto_grad'], ['Cel', 'Ten Cel', 'Maj', 'Cap', '1º Ten', '2º Ten', 'Asp'])) {
+            if ($r['cafe']) $oficiais_c += $qtd;
+            if ($r['almoco']) $oficiais_a += $qtd;
+            if (isset($r['jantar']) && $r['jantar']) $oficiais_j += $qtd;
+        } elseif ($r['posto_grad'] === 'Sargento' ||
+                  in_array($r['posto_grad'], ['Subten', 'Sub Ten', '1º Sgt', '2º Sgt', '3º Sgt'])) {
+            if ($r['cafe']) $st_sgt_c += $qtd;
+            if ($r['almoco']) $st_sgt_a += $qtd;
+            if (isset($r['jantar']) && $r['jantar']) $st_sgt_j += $qtd;
+        } else {
+            // Cabo/Soldado e qualquer outro
+            if ($r['cafe']) $cbsd_c += $qtd;
+            if ($r['almoco']) $cbsd_a += $qtd;
+            if (isset($r['jantar']) && $r['jantar']) $cbsd_j += $qtd;
+        }
     }
 
     $soma_c = $oficiais_c + $st_sgt_c + $cbsd_c;

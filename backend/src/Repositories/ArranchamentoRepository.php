@@ -31,13 +31,16 @@ class ArranchamentoRepository {
             $params[] = $subunidade;
         }
 
+        // Relação nominal: SOMENTE registros normais (is_extra = 0)
         $sqlOfSgt = "SELECT * FROM tb_arranchamento 
                      WHERE data_refeicao = ?" . $sqlFilter . " 
+                     AND is_extra = 0
                      AND posto_grad IN ('Cel', 'Ten Cel', 'Maj', 'Cap', '1º Ten', '2º Ten', 'Asp', 'Subten', 'Sub Ten', '1º Sgt', '2º Sgt', '3º Sgt', 'Oficial', 'Sargento')
                      ORDER BY FIELD(posto_grad, 'Cel', 'Ten Cel', 'Maj', 'Cap', '1º Ten', '2º Ten', 'Asp', 'Oficial', 'Subten', 'Sub Ten', '1º Sgt', '2º Sgt', '3º Sgt', 'Sargento'), nome_guerra ASC";
 
         $sqlCbSd = "SELECT * FROM tb_arranchamento 
                     WHERE data_refeicao = ?" . $sqlFilter . " 
+                    AND is_extra = 0
                     AND posto_grad IN ('Cb', 'Sd EP', 'Sd EV', 'SC', 'Sd', 'Cabo/Soldado')
                     ORDER BY FIELD(posto_grad, 'Cb', 'Sd EP', 'Sd EV', 'SC', 'Sd', 'Cabo/Soldado'), CAST(numero AS UNSIGNED) ASC, nome_guerra ASC";
 
@@ -49,7 +52,16 @@ class ArranchamentoRepository {
         $stmt2->execute($params);
         $cbSd = $stmt2->fetchAll();
 
-        return ['ofSgt' => $ofSgt, 'cbSd' => $cbSd];
+        // Extras: todos os registros com is_extra = 1 (para contagem na capa)
+        $sqlExtras = "SELECT * FROM tb_arranchamento 
+                      WHERE data_refeicao = ?" . $sqlFilter . " 
+                      AND is_extra = 1
+                      ORDER BY posto_grad, nome_guerra ASC";
+        $stmt3 = $this->db->prepare($sqlExtras);
+        $stmt3->execute($params);
+        $extras = $stmt3->fetchAll();
+
+        return ['ofSgt' => $ofSgt, 'cbSd' => $cbSd, 'extras' => $extras];
     }
 
     public function salvarLote(string $subunidade, string $posto_grad, string $numero, string $nome_guerra, array $refeicoes): array {
