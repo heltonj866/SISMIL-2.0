@@ -54,6 +54,15 @@ class Database {
                 try { self::$instance->exec("ALTER TABLE tb_arranchamento ADD COLUMN jantar TINYINT(1) DEFAULT 0 AFTER almoco"); } catch (PDOException $e) {}
                 try { self::$instance->exec("ALTER TABLE tb_arranchamento ADD COLUMN is_extra TINYINT(1) DEFAULT 0 AFTER jantar"); } catch (PDOException $e) {}
                 try { self::$instance->exec("ALTER TABLE tb_arranchamento ADD COLUMN quantidade INT DEFAULT 1 AFTER is_extra"); } catch (PDOException $e) {}
+
+                // Auto-migration tb_veiculos — colunas opcionais
+                try { self::$instance->exec("ALTER TABLE tb_veiculos ADD COLUMN renavam VARCHAR(20) NULL"); } catch (PDOException $e) {}
+                try { self::$instance->exec("ALTER TABLE tb_veiculos ADD COLUMN chassi VARCHAR(50) NULL"); } catch (PDOException $e) {}
+                try { self::$instance->exec("ALTER TABLE tb_veiculos ADD COLUMN ano_fabricacao YEAR NULL"); } catch (PDOException $e) {}
+                try { self::$instance->exec("ALTER TABLE tb_veiculos ADD COLUMN proprietario VARCHAR(150) NULL"); } catch (PDOException $e) {}
+                try { self::$instance->exec("ALTER TABLE tb_veiculos ADD COLUMN cpf_proprietario VARCHAR(20) NULL"); } catch (PDOException $e) {}
+                try { self::$instance->exec("ALTER TABLE tb_veiculos ADD COLUMN cnh_proprietario VARCHAR(20) NULL"); } catch (PDOException $e) {}
+                try { self::$instance->exec("ALTER TABLE tb_veiculos ADD COLUMN validade_crlv DATE NULL"); } catch (PDOException $e) {}
                 
             } catch (PDOException $e) {
                 // Nunca expõe os detalhes da conexão PDO para o cliente

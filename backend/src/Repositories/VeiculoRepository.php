@@ -70,11 +70,9 @@ class VeiculoRepository {
 
     public function insert(array $dados): int {
         $sql = "INSERT INTO tb_veiculos (
-            militar_id, tipo_veiculo, marca, modelo, cor, placa, renavam, chassi, 
-            ano_fabricacao, proprietario, cpf_proprietario, cnh_proprietario, emissao_crlv, validade_crlv, pdf_veiculo
+            militar_id, tipo_veiculo, marca, modelo, cor, placa, emissao_crlv, pdf_veiculo
         ) VALUES (
-            :militar_id, :tipo_veiculo, :marca, :modelo, :cor, :placa, :renavam, :chassi, 
-            :ano_fabricacao, :proprietario, :cpf_proprietario, :cnh_proprietario, :emissao_crlv, :validade_crlv, :pdf_veiculo
+            :militar_id, :tipo_veiculo, :marca, :modelo, :cor, :placa, :emissao_crlv, :pdf_veiculo
         )";
         $this->db->prepare($sql)->execute($dados);
         return (int)$this->db->lastInsertId();

@@ -25,20 +25,13 @@ class VeiculoService {
         }
 
         $parametros = [
-            ':militar_id' => $militar_id,
-            ':tipo_veiculo' => $dados['tipo_veiculo'],
-            ':marca' => strtoupper(trim($dados['marca'])),
-            ':modelo' => strtoupper(trim($dados['modelo'])),
-            ':cor' => strtoupper(trim($dados['cor'])),
-            ':placa' => strtoupper(trim($dados['placa'])),
-            ':renavam' => $dados['renavam'] ?: null,
-            ':chassi' => strtoupper(trim($dados['chassi'] ?? '')),
-            ':ano_fabricacao' => $dados['ano_fabricacao'] ?: null,
-            ':proprietario' => strtoupper(trim($dados['proprietario'] ?? '')),
-            ':cpf_proprietario' => $dados['cpf_proprietario'] ?: null,
-            ':cnh_proprietario' => $dados['cnh_proprietario'] ?: null,
-            ':emissao_crlv' => $dados['emissao_crlv'] ?: null,
-            ':validade_crlv' => $dados['validade_crlv'] ?: null,
+            ':militar_id'   => $militar_id,
+            ':tipo_veiculo' => $dados['tipo_veiculo'] ?? 'Carro',
+            ':marca'        => strtoupper(trim($dados['marca']        ?? '')),
+            ':modelo'       => strtoupper(trim($dados['modelo']       ?? '')),
+            ':cor'          => strtoupper(trim($dados['cor']          ?? '')),
+            ':placa'        => strtoupper(trim($dados['placa']        ?? '')),
+            ':emissao_crlv' => !empty($dados['emissao_crlv']) ? $dados['emissao_crlv'] : null,
         ];
 
         $veiculoExistente = null;
