@@ -1,1 +1,0 @@
-import{t as e}from"./index-CIwp11w4.js";async function t(t,n={}){let r=e(),i={...n.headers||{}};return r.csrfToken&&(i[`X-Csrf-Token`]=r.csrfToken),fetch(t,{...n,headers:i,credentials:`include`})}async function n(e,n={}){return(await t(e,n)).json()}export{n as t};

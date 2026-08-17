@@ -350,7 +350,7 @@
             </button>
           </div>
           <div class="footer-right">
-            <button type="button" class="btn-modern btn-secondary-outline me-2" @click="$emit('cancel')">
+            <button type="button" class="btn-modern btn-secondary-outline me-2" @click="handleCancel">
               {{ modoS2 ? 'Fechar Ficha' : 'Cancelar' }}
             </button>
             <!-- Salvar Dados: somente admin e sargenteacao -->
@@ -365,7 +365,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useToast, useConfirm } from '../composables/useToast'
 import VehicleList from './VehicleList.vue'
@@ -392,6 +392,28 @@ const props = defineProps({
 
 const isReadonly = computed(() => props.readonlyAll || props.modoS2)
 const emit = defineEmits(['cancel', 'saved'])
+
+// ─── Detecção de alterações não salvas ───────────────────────────────────────
+const originalSnapshot = ref('')
+const isDirty = computed(() => JSON.stringify(form.value) !== originalSnapshot.value)
+
+const handleCancel = async () => {
+  if (isDirty.value || fileUploads.value.foto || fileUploads.value.pdf_habilitacao) {
+    const ok = await confirmDialog('Você tem alterações não salvas. Deseja descartar e sair?', { title: 'Alterações não salvas', variant: 'danger' })
+    if (!ok) return
+  }
+  emit('cancel')
+}
+
+// Avisa ao tentar fechar/recarregar a aba com alterações pendentes
+const onBeforeUnloadHandler = (e) => {
+  if (isDirty.value) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
+onMounted(() => window.addEventListener('beforeunload', onBeforeUnloadHandler))
+onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnloadHandler))
 
 const authStore = useAuthStore()
 const canEdit = computed(() => authStore.canEdit)
@@ -453,6 +475,9 @@ const fetchDadosCompletos = async () => {
       form.value.validade_cnh = d.validade_cnh || ''
     }
   } catch (e) { console.error('Erro ao buscar dados do militar:', e) }
+  // Tira snapshot após carregar para detectar alterações futuras
+  await nextTick()
+  originalSnapshot.value = JSON.stringify(form.value)
 }
 
 onMounted(fetchDadosCompletos)

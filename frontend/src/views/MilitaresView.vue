@@ -100,7 +100,7 @@
 
         <div class="results-grid">
           <MilitarCard
-            v-for="m in searchResults"
+            v-for="m in paginatedResults"
             :key="m.id"
             :militar="m"
             @editar="handleEdit"
@@ -113,6 +113,13 @@
           <div v-if="searchResults.length === 0" class="no-results">
             Nenhum registro encontrado.
           </div>
+        </div>
+        
+        <!-- Pagination / Load More -->
+        <div class="load-more-container mt-4 text-center" v-if="hasMoreResults">
+          <button class="btn-modern btn-primary-outline" @click="loadMore">
+            <i class="fas fa-chevron-down"></i> Carregar Mais ({{ searchResults.length - paginatedResults.length }} restantes)
+          </button>
         </div>
       </div>
     </div>
@@ -168,6 +175,14 @@ const searchResults = ref([])
 const hasSearched = ref(false)
 const loading = ref(false)
 
+// Paginação client-side
+const currentPage = ref(1)
+const itemsPerPage = 20
+const paginatedResults = computed(() => searchResults.value.slice(0, currentPage.value * itemsPerPage))
+const hasMoreResults = computed(() => paginatedResults.value.length < searchResults.value.length)
+
+const loadMore = () => { currentPage.value++ }
+
 const showForm = ref(false)
 const selectedMilitar = ref(null)
 const modoS2 = ref(false)
@@ -183,6 +198,7 @@ const militarParaDesligar = ref(null)
 const handleSearch = async () => {
   loading.value = true
   hasSearched.value = true
+  currentPage.value = 1 // Reseta paginação
   
   const params = {
     termo: filters.value.termo,

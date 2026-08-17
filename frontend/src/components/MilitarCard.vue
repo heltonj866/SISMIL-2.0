@@ -9,6 +9,12 @@
         {{ militar.posto_grad }} {{ militar.nome_guerra }}
       </h5>
       <p class="card-sub">{{ militar.subunidade }}</p>
+      <!-- CNH Badge -->
+      <div v-if="cnhStatus" class="cnh-badge" :class="'cnh-' + cnhStatus">
+        <span v-if="cnhStatus === 'expired'">⚠️ CNH VENCIDA</span>
+        <span v-else-if="cnhStatus === 'expiring'">⏰ CNH vence em breve</span>
+        <span v-else>✔ CNH {{ militar.cat_cnh }}</span>
+      </div>
       <p class="card-completo text-muted" v-if="militar.nome_completo">{{ militar.nome_completo }}</p>
       <div class="card-actions">
         <!-- admin / sargenteacao -->
@@ -50,6 +56,20 @@ const canEdit = computed(() => authStore.canEdit)
 const canHomologar = computed(() => authStore.canHomologar)
 
 const isDesligado = computed(() => props.militar?.status_ativo == 0)
+
+const cnhStatus = computed(() => {
+  if (!props.militar?.cat_cnh) return null
+  const validade = props.militar.validade_cnh
+  if (!validade) return 'ok'
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const expDate = new Date(validade + 'T00:00:00')
+  if (expDate < today) return 'expired'
+  const in30 = new Date(today)
+  in30.setDate(in30.getDate() + 30)
+  if (expDate <= in30) return 'expiring'
+  return 'ok'
+})
 
 const fotoUrl = computed(() =>
   props.militar?.foto_path
@@ -119,4 +139,9 @@ const onImgError = (e) => { e.target.src = '/sismil/assets/sem_foto.png' }
 .btn-info:hover { background: #0dcaf0; color: white; }
 .btn-outline { background: transparent; color: var(--text-muted); border: 1px solid #dee2e6; }
 .btn-outline:hover { background: #f8f9fa; }
+
+.cnh-badge { font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.55rem; border-radius: 20px; display: inline-block; margin-bottom: 0.4rem; }
+.cnh-expired { background: #f8d7da; color: #842029; }
+.cnh-expiring { background: #fff3cd; color: #664d03; }
+.cnh-ok { background: #d1e7dd; color: #0f5132; }
 </style>
