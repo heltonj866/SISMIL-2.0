@@ -11,6 +11,31 @@
       Salve os dados básicos do militar primeiro para lançar alterações.
     </div>
 
+    <!-- Resumo (Dashboard) -->
+    <div class="summary-cards" v-if="militarId && !showForm && historico.length > 0">
+      <div class="summary-card card-elogio">
+        <div class="summary-icon"><i class="fas fa-medal"></i></div>
+        <div class="summary-info">
+          <h4>{{ totalElogios }}</h4>
+          <span>Elogios / FO+</span>
+        </div>
+      </div>
+      <div class="summary-card card-punicao">
+        <div class="summary-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="summary-info">
+          <h4>{{ totalPunicoes }}</h4>
+          <span>Punições / FO-</span>
+        </div>
+      </div>
+      <div class="summary-card card-dias">
+        <div class="summary-icon"><i class="fas fa-calendar-times"></i></div>
+        <div class="summary-info">
+          <h4>{{ totalDiasPrisao }}</h4>
+          <span>Dias de Punição</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Tabela -->
     <div class="table-responsive" v-if="militarId && !showForm">
       <table class="table-modern">
@@ -92,7 +117,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useToast, useConfirm } from '../composables/useToast'
 import { MilitarService } from '@/services/MilitarService'
 
@@ -103,6 +128,34 @@ const props = defineProps({ militarId: [Number, String] })
 const historico = ref([])
 const showForm = ref(false)
 const loading = ref(false)
+
+const totalElogios = computed(() => {
+  return historico.value.filter(h => 
+    h.categoria === 'ELOGIO' || 
+    (h.tipo_detalhe && h.tipo_detalhe.toUpperCase().includes('FO+')) ||
+    (h.tipo_detalhe && h.tipo_detalhe.toUpperCase().includes('ELOGIO'))
+  ).length
+})
+
+const totalPunicoes = computed(() => {
+  return historico.value.filter(h => 
+    h.categoria === 'DISCIPLINA' && (
+      (h.tipo_detalhe && h.tipo_detalhe.toUpperCase().includes('FO-')) ||
+      (h.tipo_detalhe && h.tipo_detalhe.toUpperCase().includes('PRISÃO')) ||
+      (h.tipo_detalhe && h.tipo_detalhe.toUpperCase().includes('PRISAO')) ||
+      (h.tipo_detalhe && h.tipo_detalhe.toUpperCase().includes('DETENÇÃO')) ||
+      (h.tipo_detalhe && h.tipo_detalhe.toUpperCase().includes('DETENCAO')) ||
+      (h.tipo_detalhe && h.tipo_detalhe.toUpperCase().includes('REPREENSÃO')) ||
+      (h.tipo_detalhe && h.tipo_detalhe.toUpperCase().includes('REPREENSAO'))
+    )
+  ).length
+})
+
+const totalDiasPrisao = computed(() => {
+  return historico.value.reduce((acc, h) => {
+    return acc + (parseInt(h.qtd_dias) || 0)
+  }, 0)
+})
 
 const form = ref({ cat: 'DISCIPLINA', tipo: '', data: '', dias: 0, doc: '', desc: '' })
 const file = ref(null)
@@ -185,4 +238,23 @@ watch(() => props.militarId, fetchHistorico)
 .justify-content-end { justify-content: flex-end; }
 .btn-icon { background: none; border: none; cursor: pointer; opacity: 0.7; transition: opacity 0.2s; }
 .btn-icon:hover { opacity: 1; }
+
+.summary-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+.summary-card { display: flex; align-items: center; padding: 1rem; border-radius: 8px; background: white; border: 1px solid #e9ecef; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+.summary-icon { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-right: 1rem; }
+.summary-info h4 { margin: 0; font-size: 1.5rem; font-weight: 800; color: #212529; }
+.summary-info span { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+
+.card-elogio .summary-icon { background: #d1e7dd; color: #0f5132; }
+.card-elogio { border-bottom: 3px solid #198754; }
+
+.card-punicao .summary-icon { background: #f8d7da; color: #842029; }
+.card-punicao { border-bottom: 3px solid #dc3545; }
+
+.card-dias .summary-icon { background: #fff3cd; color: #664d03; }
+.card-dias { border-bottom: 3px solid #ffc107; }
+
+@media (max-width: 768px) {
+  .summary-cards { grid-template-columns: 1fr; }
+}
 </style>
