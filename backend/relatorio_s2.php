@@ -134,6 +134,7 @@ $data_atual = date('d/m/Y H:i');
                 <th>Tipo</th>
                 <th>Placa</th>
                 <th>Marca/Modelo/Cor</th>
+                <th>Proprietário</th>
                 <th>Validade CRLV</th>
                 <th>Status S2</th>
                 <th>Observações da Pendência</th>
@@ -147,6 +148,7 @@ $data_atual = date('d/m/Y H:i');
                         $status_badge = $v['homologado'] == 1 ? '<span class="badge badge-success">Liberado</span>' : '<span class="badge badge-danger">Pendente</span>';
                         $validade = $v['validade_crlv'] ? date('d/m/Y', strtotime($v['validade_crlv'])) : '---';
                         $veiculo_detalhes = strtoupper(($v['marca'] ? $v['marca'] . " / " : "") . $v['modelo'] . " (" . $v['cor'] . ")");
+                        $proprietario = !empty($v['proprietario_nome']) ? strtoupper($v['proprietario_nome']) . " (" . strtoupper($v['proprietario_parentesco'] ?? 'TERCEIRO') . ")" : 'O PRÓPRIO MILITAR';
                     ?>
                     <tr>
                         <td style="font-weight: bold;"><?php echo h(strtoupper($nome_completo)); ?></td>
@@ -154,6 +156,7 @@ $data_atual = date('d/m/Y H:i');
                         <td><?php echo h(strtoupper($v['tipo_veiculo'])); ?></td>
                         <td class="placa"><?php echo h(strtoupper($v['placa'])); ?></td>
                         <td><?php echo h($veiculo_detalhes); ?></td>
+                        <td><?php echo h($proprietario); ?></td>
                         <td><?php echo h($validade); ?></td>
                         <td style="text-align: center;"><?php echo $status_badge; ?></td>
                         <td style="color: #666; font-style: italic;"><?php echo $v['observacao_s2'] ? h($v['observacao_s2']) : '---'; ?></td>
@@ -161,7 +164,7 @@ $data_atual = date('d/m/Y H:i');
                 <?php endforeach; ?>
             <?php else: ?>
                 <tr>
-                    <td colspan="8" style="text-align: center; padding: 20px; color: #666;">Nenhum veículo cadastrado no banco de dados.</td>
+                    <td colspan="9" style="text-align: center; padding: 20px; color: #666;">Nenhum veículo cadastrado no banco de dados.</td>
                 </tr>
             <?php endif; ?>
         </tbody>

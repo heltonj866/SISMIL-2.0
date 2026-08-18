@@ -142,7 +142,10 @@ function dataBR($data) {
     <ul>
         <?php if($m['pdf_habilitacao']): ?> <li>CNH do Militar (Digitalizada)</li> <?php endif; ?>
         <?php if($m['status_ativo'] == 0 && $m['pdf_nada_consta']): ?> <li style="color:red; font-weight:bold;">Ficha de Nada Consta (Desligamento) anexada ao sistema.</li> <?php endif; ?>
-        <?php foreach($veiculos as $v): if($v['pdf_veiculo']): ?> <li>CRLV - Placa <?php echo h(strtoupper($v['placa'])); ?></li> <?php endif; endforeach; ?>
+        <?php foreach($veiculos as $v): ?>
+            <?php if($v['pdf_veiculo']): ?> <li>CRLV - Placa <?php echo h(strtoupper($v['placa'])); ?></li> <?php endif; ?>
+            <?php if(!empty($v['pdf_comprovante_vinculo'])): ?> <li>Doc. Comprobatório de Vínculo (Proprietário) - Placa <?php echo h(strtoupper($v['placa'])); ?></li> <?php endif; ?>
+        <?php endforeach; ?>
         <?php if(empty($m['pdf_habilitacao']) && empty($m['pdf_nada_consta']) && count($veiculos) == 0): ?> <li style="color:#666; font-style:italic;">Nenhum documento PDF anexado.</li> <?php endif; ?>
     </ul>
 
@@ -152,18 +155,25 @@ function dataBR($data) {
         <div class="col"><div class="label">Validade CNH</div><div class="value"><?php echo h(dataBR($m['validade_cnh'])); ?></div></div>
     </div>
     <table>
-        <thead><tr><th>Tipo</th><th>Placa</th><th>Marca/Modelo/Cor</th><th>Validade CRLV</th><th>Status S2</th></tr></thead>
+        <thead><tr><th>Tipo</th><th>Placa</th><th>Marca/Modelo/Cor</th><th>Proprietário</th><th>Validade CRLV</th><th>Status S2</th></tr></thead>
         <tbody>
             <?php if(count($veiculos) > 0): foreach($veiculos as $v): ?>
                 <tr>
                     <td><?php echo h(strtoupper($v['tipo_veiculo'])); ?></td>
                     <td style="font-family:monospace; font-weight:bold;"><?php echo h(strtoupper($v['placa'])); ?></td>
                     <td><?php echo h(strtoupper($v['marca'] . ' ' . $v['modelo'] . ' - ' . $v['cor'])); ?></td>
+                    <td>
+                        <?php if(!empty($v['proprietario_nome'])): ?>
+                            <strong><?php echo h(strtoupper($v['proprietario_nome'])); ?></strong> (<?php echo h(strtoupper($v['proprietario_parentesco'] ?? 'TERCEIRO')); ?>)
+                        <?php else: ?>
+                            O PRÓPRIO MILITAR
+                        <?php endif; ?>
+                    </td>
                     <td><?php echo h(dataBR($v['validade_crlv'])); ?></td>
                     <td><?php echo $v['homologado'] == 1 ? 'HOMOLOGADO' : 'PENDENTE'; ?></td>
                 </tr>
             <?php endforeach; else: ?>
-                <tr><td colspan="5" style="text-align:center; color:#555;">Nenhum veículo cadastrado na base de dados.</td></tr>
+                <tr><td colspan="6" style="text-align:center; color:#555;">Nenhum veículo cadastrado na base de dados.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>

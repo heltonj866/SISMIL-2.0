@@ -50,10 +50,13 @@ class Database {
                     PDO::ATTR_EMULATE_PREPARES   => false,
                 ]);
 
-                // Auto-migration silenciosa para adicionar colunas de arranchamento
+                // Auto-migration silenciosa para adicionar colunas de arranchamento e veiculos
                 try { self::$instance->exec("ALTER TABLE tb_arranchamento ADD COLUMN jantar TINYINT(1) DEFAULT 0 AFTER almoco"); } catch (PDOException $e) {}
                 try { self::$instance->exec("ALTER TABLE tb_arranchamento ADD COLUMN is_extra TINYINT(1) DEFAULT 0 AFTER jantar"); } catch (PDOException $e) {}
                 try { self::$instance->exec("ALTER TABLE tb_arranchamento ADD COLUMN quantidade INT DEFAULT 1 AFTER is_extra"); } catch (PDOException $e) {}
+                try { self::$instance->exec("ALTER TABLE tb_veiculos ADD COLUMN proprietario_nome VARCHAR(100) NULL AFTER cor"); } catch (PDOException $e) {}
+                try { self::$instance->exec("ALTER TABLE tb_veiculos ADD COLUMN proprietario_parentesco VARCHAR(50) NULL AFTER proprietario_nome"); } catch (PDOException $e) {}
+                try { self::$instance->exec("ALTER TABLE tb_veiculos ADD COLUMN pdf_comprovante_vinculo VARCHAR(255) NULL AFTER pdf_veiculo"); } catch (PDOException $e) {}
                 
             } catch (PDOException $e) {
                 // Nunca expõe os detalhes da conexão PDO para o cliente

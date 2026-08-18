@@ -24,14 +24,19 @@ class VeiculoService {
             throw new Exception("Militar não informado.");
         }
 
+        $proprietarioNome = !empty($dados['proprietario_nome']) ? strtoupper(trim($dados['proprietario_nome'])) : null;
+        $proprietarioParentesco = !empty($dados['proprietario_parentesco']) ? strtoupper(trim($dados['proprietario_parentesco'])) : null;
+
         $parametros = [
-            ':militar_id'   => $militar_id,
-            ':tipo_veiculo' => $dados['tipo_veiculo'] ?? 'Carro',
-            ':marca'        => strtoupper(trim($dados['marca']        ?? '')),
-            ':modelo'       => strtoupper(trim($dados['modelo']       ?? '')),
-            ':cor'          => strtoupper(trim($dados['cor']          ?? '')),
-            ':placa'        => strtoupper(trim($dados['placa']        ?? '')),
-            ':emissao_crlv' => !empty($dados['emissao_crlv']) ? $dados['emissao_crlv'] : null,
+            ':militar_id'             => $militar_id,
+            ':tipo_veiculo'           => $dados['tipo_veiculo'] ?? 'Carro',
+            ':marca'                  => strtoupper(trim($dados['marca']        ?? '')),
+            ':modelo'                 => strtoupper(trim($dados['modelo']       ?? '')),
+            ':cor'                    => strtoupper(trim($dados['cor']          ?? '')),
+            ':proprietario_nome'      => $proprietarioNome,
+            ':proprietario_parentesco'=> $proprietarioParentesco,
+            ':placa'                  => strtoupper(trim($dados['placa']        ?? '')),
+            ':emissao_crlv'           => !empty($dados['emissao_crlv']) ? $dados['emissao_crlv'] : null,
         ];
 
         $veiculoExistente = null;
@@ -54,8 +59,22 @@ class VeiculoService {
         );
         $parametros[':pdf_veiculo'] = $pdf_veiculo ?? ($veiculoExistente['pdf_veiculo'] ?? null);
 
+        // Upload Comprovante de Vínculo / Documento do Proprietário (Opcional)
+        $pdf_vinculo = $this->uploadService->validarEProcessarUpload(
+            'pdf_comprovante_vinculo',
+            ['pdf', 'jpg', 'jpeg', 'png'],
+            ['application/pdf', 'image/jpeg', 'image/png'],
+            $dir_uploads,
+            'vinculo_'
+        );
+
         if ($id > 0) {
             $parametros[':id'] = $id;
+            $parametros[':pdf_comprovante_vinculo'] = $pdf_vinculo ?? ($veiculoExistente['pdf_comprovante_vinculo'] ?? null);
+            // Ao salvar alterações no veículo, reseta a observação antiga do S2 e volta status para PENDENTE (0)
+            $parametros[':homologado'] = 0;
+            $parametros[':observacao_s2'] = null;
+
             $this->repo->update($parametros);
             
             $this->alteracaoRepo->registrar(
@@ -64,9 +83,10 @@ class VeiculoService {
                 date('Y-m-d'), 
                 'S2', 
                 'ATUALIZACAO_VEICULO', 
-                "Atualização de veículo placa " . $parametros[':placa']
+                "Veículo placa " . $parametros[':placa'] . " atualizado pela Sargenteação (retornado para reavaliação do S2)."
             );
         } else {
+            $parametros[':pdf_comprovante_vinculo'] = $pdf_vinculo;
             $this->repo->insert($parametros);
             
             $this->alteracaoRepo->registrar(

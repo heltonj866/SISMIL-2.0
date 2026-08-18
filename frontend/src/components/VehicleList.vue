@@ -18,7 +18,7 @@
         <thead>
           <tr>
             <th>Tipo</th><th>Placa</th><th>Marca / Modelo</th><th>Cor</th>
-            <th>Emissão CRLV</th><th>CRLV</th><th>Status S2</th><th>Ações</th>
+            <th>Emissão CRLV</th><th>Documentos</th><th>Status S2</th><th>Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -27,26 +27,44 @@
             <td>
               <span class="placa-badge">{{ v.placa }}</span>
             </td>
-            <td>{{ v.marca ? v.marca + ' / ' : '' }}{{ v.modelo }}</td>
+            <td>
+              <div>{{ v.marca ? v.marca + ' / ' : '' }}{{ v.modelo }}</div>
+              <div v-if="v.proprietario_nome" class="proprietario-tag mt-1">
+                <i class="fas fa-user-tag"></i> <strong>Prop:</strong> {{ v.proprietario_nome }} ({{ v.proprietario_parentesco || 'Terceiro' }})
+              </div>
+            </td>
             <td>{{ v.cor }}</td>
             <td>{{ formatData(v.emissao_crlv) }}</td>
             <td>
-              <!-- CRLV visivel para todos -->
-              <a v-if="v.pdf_veiculo"
-                :href="`/sismil/uploads/${v.pdf_veiculo}`"
-                target="_blank"
-                class="btn-ver-doc"
-                title="Abrir CRLV"
-              >
-                <i class="fas fa-file-pdf"></i> Ver CRLV
-              </a>
-              <span v-else class="sem-doc">—</span>
+              <div class="d-flex flex-column gap-1">
+                <!-- CRLV visivel para todos -->
+                <a v-if="v.pdf_veiculo"
+                  :href="`/sismil/uploads/${v.pdf_veiculo}`"
+                  target="_blank"
+                  class="btn-ver-doc"
+                  title="Abrir CRLV"
+                >
+                  <i class="fas fa-file-pdf"></i> Ver CRLV
+                </a>
+                <span v-else class="sem-doc">—</span>
+
+                <!-- Comprovante de Vinculo (se houver) -->
+                <a v-if="v.pdf_comprovante_vinculo"
+                  :href="`/sismil/uploads/${v.pdf_comprovante_vinculo}`"
+                  target="_blank"
+                  class="btn-ver-doc btn-ver-vinculo"
+                  title="Abrir Comprovante de Vínculo"
+                >
+                  <i class="fas fa-id-card"></i> Doc. Vínculo
+                </a>
+              </div>
             </td>
             <td>
               <span class="badge" :class="v.homologado == 1 ? 'badge-success' : 'badge-warning'">
                 {{ v.homologado == 1 ? 'HOMOLOGADO' : 'PENDENTE S2' }}
               </span>
-              <div class="text-danger small fw-bold mt-1" v-if="v.observacao_s2 && canEdit" style="line-height:1.1; font-size: 0.75rem;">
+              <!-- Observação de pendência do S2 só é exibida se o veículo ainda estiver PENDENTE -->
+              <div class="text-danger small fw-bold mt-1" v-if="v.observacao_s2 && v.homologado != 1 && canEdit" style="line-height:1.1; font-size: 0.75rem;">
                 <i class="fas fa-exclamation-triangle"></i> {{ v.observacao_s2 }}
               </div>
             </td>
@@ -83,7 +101,7 @@
     <!-- Formulário de Novo/Edição de Veículo (só admin/sargenteacao) -->
     <div v-if="showForm && canEdit" class="form-veiculo-panel">
       <h6 class="mb-3">{{ form.id ? 'Editar Veículo' : 'Adicionar Veículo' }}</h6>
-        <div class="form-grid veiculo-grid">
+      <div class="form-grid veiculo-grid">
         <div class="input-group">
           <label>Tipo</label>
           <select v-model="form.tipo" class="input-modern">
@@ -110,9 +128,47 @@
           <label>Emissão do CRLV</label>
           <input type="date" v-model="form.emissao" class="input-modern" title="Data de emissão. Validade = emissão + 1 ano">
         </div>
+        
+        <!-- Opção de Terceiro / Proprietário -->
+        <div class="input-group full-width proprietario-box">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <input type="checkbox" id="checkTerceiro" v-model="form.is_terceiro" class="form-check-input">
+            <label for="checkTerceiro" class="mb-0 fw-bold" style="cursor: pointer;">
+              <i class="fas fa-user-friends"></i> Veículo em nome de terceiros / familiar (não está em meu nome)
+            </label>
+          </div>
+
+          <div v-if="form.is_terceiro" class="form-grid veiculo-grid mt-2" style="background: rgba(255,255,255,0.7); padding: 1rem; border-radius: 8px; border: 1px dashed #cbd5e1;">
+            <div class="input-group">
+              <label>Nome do Proprietário</label>
+              <input type="text" v-model="form.proprietario_nome" class="input-modern text-uppercase" placeholder="Ex: Maria de Souza">
+            </div>
+            <div class="input-group">
+              <label>Vínculo / Parentesco</label>
+              <select v-model="form.proprietario_parentesco" class="input-modern">
+                <option value="PAI/MAE">Pai / Mãe</option>
+                <option value="CONJUGE">Cônjuge / Esposo(a)</option>
+                <option value="FILHO(A)">Filho(a)</option>
+                <option value="IRMAO(A)">Irmão / Irmã</option>
+                <option value="EMPRESA/LOCADORA">Empresa / Locadora</option>
+                <option value="OUTRO">Outro Vínculo</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label>Comprovante de Vínculo (Opcional)</label>
+              <input type="file" @change="handleFileVinculo" accept="application/pdf,image/*" class="input-modern">
+              <small class="text-muted mt-1 d-block" v-if="form.id && veiculos.find(v=>v.id===form.id)?.pdf_comprovante_vinculo">
+                <a :href="`/sismil/uploads/${veiculos.find(v=>v.id===form.id)?.pdf_comprovante_vinculo}`" target="_blank" class="doc-link">
+                  <i class="fas fa-id-card"></i> Ver documento atual
+                </a>
+              </small>
+            </div>
+          </div>
+        </div>
+
         <div class="input-group full-width">
           <label>CRLV (PDF)</label>
-          <input type="file" @change="handleFile" accept="application/pdf" class="input-modern">
+          <input type="file" @change="handleFile" accept="application/pdf,image/*" class="input-modern">
           <small class="text-muted mt-1 d-block" v-if="form.id && veiculos.find(v=>v.id===form.id)?.pdf_veiculo">
             <a :href="`/sismil/uploads/${veiculos.find(v=>v.id===form.id)?.pdf_veiculo}`" target="_blank" class="doc-link">
               <i class="fas fa-file-pdf"></i> Ver CRLV atual
@@ -182,13 +238,15 @@ const veiculos = ref([])
 const showForm = ref(false)
 const loading = ref(false)
 
-const form = ref({ id: null, tipo: 'Carro', placa: '', cor: '', marca: '', modelo: '', validade: '' })
+const form = ref({ id: null, tipo: 'Carro', placa: '', cor: '', marca: '', modelo: '', emissao: '', is_terceiro: false, proprietario_nome: '', proprietario_parentesco: 'PAI/MAE' })
 const file = ref(null)
+const fileVinculo = ref(null)
 
 const showAvalModal = ref(false)
 const avalForm = ref({ id: null, militarId: null, status: '1', obs: '' })
 
 const handleFile = (e) => { if (e.target.files.length) file.value = e.target.files[0] }
+const handleFileVinculo = (e) => { if (e.target.files.length) fileVinculo.value = e.target.files[0] }
 
 const formatData = (d) => {
   if (!d || d === '0000-00-00') return '---'
@@ -207,12 +265,25 @@ const fetchVeiculos = async () => {
 
 const cancelarForm = () => {
   showForm.value = false
-  form.value = { id: null, tipo: 'Carro', placa: '', cor: '', marca: '', modelo: '', emissao: '' }
+  form.value = { id: null, tipo: 'Carro', placa: '', cor: '', marca: '', modelo: '', emissao: '', is_terceiro: false, proprietario_nome: '', proprietario_parentesco: 'PAI/MAE' }
   file.value = null
+  fileVinculo.value = null
 }
 
 const editarVeiculo = (v) => {
-  form.value = { id: v.id, tipo: v.tipo_veiculo, placa: v.placa, cor: v.cor, marca: v.marca || '', modelo: v.modelo, emissao: v.emissao_crlv || '' }
+  form.value = {
+    id: v.id,
+    tipo: v.tipo_veiculo,
+    placa: v.placa,
+    cor: v.cor,
+    marca: v.marca || '',
+    modelo: v.modelo,
+    emissao: v.emissao_crlv || '',
+    is_terceiro: !!(v.proprietario_nome),
+    proprietario_nome: v.proprietario_nome || '',
+    proprietario_parentesco: v.proprietario_parentesco || 'PAI/MAE'
+  }
+  fileVinculo.value = null
   showForm.value = true
 }
 
@@ -227,6 +298,16 @@ const salvar = async () => {
   fd.append('marca', form.value.marca)
   fd.append('modelo', form.value.modelo)
   fd.append('emissao_crlv', form.value.emissao || '')
+
+  if (form.value.is_terceiro) {
+    fd.append('proprietario_nome', form.value.proprietario_nome || '')
+    fd.append('proprietario_parentesco', form.value.proprietario_parentesco || 'OUTRO')
+    if (fileVinculo.value) fd.append('pdf_comprovante_vinculo', fileVinculo.value)
+  } else {
+    fd.append('proprietario_nome', '')
+    fd.append('proprietario_parentesco', '')
+  }
+
   if (form.value.id) fd.append('id', form.value.id)
   if (file.value) fd.append('pdf_veiculo', file.value)
 
@@ -292,6 +373,30 @@ watch(() => props.militarId, fetchVeiculos)
 .input-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.4rem; }
 .full-width { grid-column: span 3; }
 .form-new { border: 1px solid #e9ecef; border-radius: 8px; margin-top: 1rem; }
+
+.proprietario-tag {
+  font-size: 0.75rem;
+  color: #495057;
+  background: #f1f5f9;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  display: inline-block;
+  border: 1px solid #e2e8f0;
+}
+
+.btn-ver-vinculo {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+.btn-ver-vinculo:hover {
+  background: #c7d2fe;
+}
+.proprietario-box {
+  background: #f8fafc;
+  padding: 0.8rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
 .gap-2 { gap: 0.5rem; }
 .d-flex { display: flex; }
 .justify-content-between { justify-content: space-between; }

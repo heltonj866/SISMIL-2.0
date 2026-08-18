@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apresentação SISMIL 2.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1a365d; /* Azul Escuro / Institucional */
+            --secondary: #2b6cb0;
+            --accent: #e2e8f0;
+            --text: #2d3748;
+            --bg: #f7fafc;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        .slides-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            padding: 4rem;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            transform: translateX(50px);
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: auto;
+            z-index: 10;
+        }
+
+        /* Slide Styles */
+        .slide-title {
+            text-align: center;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .slide-title h1 {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            letter-spacing: -2px;
+        }
+
+        .slide-title p {
+            font-size: 1.5rem;
+            opacity: 0.9;
+        }
+
+        .slide h2 {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 2rem;
+            border-bottom: 4px solid var(--secondary);
+            padding-bottom: 0.5rem;
+            display: inline-block;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            margin-top: 2rem;
+        }
+
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-top: 5px solid var(--secondary);
+        }
+
+        .card h3 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        ul.feature-list {
+            list-style: none;
+            font-size: 1.2rem;
+            line-height: 1.8;
+        }
+
+        ul.feature-list li {
+            position: relative;
+            padding-left: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        ul.feature-list li::before {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            left: 0;
+            color: var(--secondary);
+        }
+
+        /* Controls */
+        .controls {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 100;
+            display: flex;
+            gap: 1rem;
+        }
+
+        button.nav-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        button.nav-btn:hover {
+            background: var(--secondary);
+            transform: scale(1.1);
+        }
+
+        button.nav-btn:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress {
+            position: fixed;
+            bottom: 0; left: 0;
+            height: 6px;
+            background: var(--secondary);
+            transition: width 0.3s;
+            z-index: 100;
+        }
+        
+        .role-badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            background: var(--primary);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="progress" id="progressBar" style="width: 0%;"></div>
+
+    <div class="slides-container">
+        
+        <!-- Slide 1: Capa -->
+        <div class="slide active slide-title">
+            <i class="fas fa-shield-alt" style="font-size: 5rem; margin-bottom: 2rem; opacity: 0.9;"></i>
+            <h1>SISMIL 2.0</h1>
+            <p>Sistema de Gestão Militar<br>Treinamento e Implantação</p>
+        </div>
+
+        <!-- Slide 2: O que é e por que mudar? -->
+        <div class="slide">
+            <h2>Por que o SISMIL?</h2>
+            <div class="content-grid">
+                <div class="card">
+                    <h3><i class="fas fa-times-circle text-danger"></i> Como era antes</h3>
+                    <ul class="feature-list">
+                        <li>Fichas de papel espalhadas.</li>
+                        <li>Dificuldade para achar o telefone de emergência de um militar.</li>
+                        <li>Arranchamento feito em planilhas ou papel, gerando retrabalho no Rancho.</li>
+                        <li>Controle de veículos descentralizado.</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3><i class="fas fa-check-circle" style="color: green;"></i> O SISMIL 2.0</h3>
+                    <ul class="feature-list">
+                        <li><strong>Plataforma Única:</strong> Todos os dados em um só lugar.</li>
+                        <li><strong>Tempo Real:</strong> Atualizou na Sargenteação, o Comando já vê.</li>
+                        <li><strong>Fim do Papel:</strong> Tudo digital e com backup.</li>
+                        <li><strong>Segurança:</strong> Sistema moderno, rastreável (auditável) e seguro.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: Sargenteação e S1 -->
+        <div class="slide">
+            <h2><i class="fas fa-users"></i> Módulo de Efetivo</h2>
+            <span class="role-badge">Público: Sargenteação e S1</span>
+            <div class="content-grid">
+                <div>
+                    <ul class="feature-list">
+                        <li><strong>Dossier Militar Completo:</strong> Dados pessoais, contatos, endereço e fotos. Tudo a um clique.</li>
+                        <li><strong>Histórico Disciplinar (S1):</strong> Registro de FO+, FO-, Elogios e punições.</li>
+                        <li><strong>Dashboard Automático:</strong> Resumo de quantas punições e elogios o militar tem, sem precisar contar na mão.</li>
+                        <li><strong>Impressão Padrão:</strong> Geração automática de Ficha em PDF padronizada.</li>
+                    </ul>
+                </div>
+                <div style="text-align: center;">
+                    <img src="uploads/brasao.png" alt="Brasão" style="max-height: 200px; opacity: 0.1;" onerror="this.style.display='none'">
+                    <div class="card" style="margin-top: 2rem;">
+                        <h3 style="justify-content: center;">"A informação certa, na hora certa."</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: S2 e Veículos -->
+        <div class="slide">
+            <h2><i class="fas fa-car"></i> Módulo de Frota e Segurança</h2>
+            <span class="role-badge">Público: S2 e Guarda do Quartel</span>
+            <div class="content-grid">
+                <div>
+                    <ul class="feature-list">
+                        <li><strong>Cadastro pela Subunidade:</strong> A sargenteação cadastra o veículo e anexa o CRLV digital.</li>
+                        <li><strong>Homologação do S2:</strong> O veículo só fica "Regular" após a análise e aprovação do S2 no sistema.</li>
+                        <li><strong>Alerta de Vencimento:</strong> O sistema avisa visualmente quando a CNH do militar está vencendo ou vencida.</li>
+                        <li><strong>Controle de Acesso:</strong> Consulta rápida por placa.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Rancho -->
+        <div class="slide">
+            <h2><i class="fas fa-utensils"></i> Módulo de Arranchamento</h2>
+            <span class="role-badge">Público: Furriel e Aprovisionamento (Rancho)</span>
+            <div class="content-grid">
+                <div class="card">
+                    <h3>Para a Subunidade</h3>
+                    <ul class="feature-list">
+                        <li>Lançamento fácil pelo computador ou celular.</li>
+                        <li>Puxa a lista do efetivo pronto automaticamente.</li>
+                        <li>Separação de militares de serviço (Extra).</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>Para o Rancho</h3>
+                    <ul class="feature-list">
+                        <li><strong>Zero Retrabalho:</strong> Recebe os números consolidados de todas as Cias em tempo real.</li>
+                        <li>Geração da "Capa do Arranchamento" pronta para impressão e assinatura.</li>
+                        <li>Evita desperdício e garante a previsão exata de gêneros.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Regras de Ouro -->
+        <div class="slide">
+            <h2><i class="fas fa-lock"></i> Regras de Ouro e Segurança</h2>
+            <div class="content-grid">
+                <div class="card" style="grid-column: span 2; border-top-color: #dc3545;">
+                    <ul class="feature-list">
+                        <li><strong>Nunca compartilhe sua senha:</strong> O sistema possui um módulo de Auditoria invisível. Tudo o que for alterado ou excluído fica gravado com o seu nome e horário.</li>
+                        <li><strong>Não use perfis inadequados:</strong> Cada seção tem seu perfil (Rancho só mexe no arranchamento, S1 mexe no efetivo).</li>
+                        <li><strong>Dados reais:</strong> Evitem usar "12345" ou dados falsos para contatos de emergência. O sistema existe para ser usado na hora do "vamos ver".</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Encerramento -->
+        <div class="slide slide-title" style="background: var(--primary);">
+            <h1>Próximos Passos</h1>
+            <p>1. Criação dos Logins<br>2. Demonstração Prática (Ao Vivo)<br>3. Tira-dúvidas</p>
+            <br>
+            <h3 style="margin-top: 3rem; opacity: 0.8;">Obrigado!</h3>
+        </div>
+
+    </div>
+
+    <!-- Controles -->
+    <div class="controls">
+        <button class="nav-btn" id="prevBtn" onclick="prevSlide()" disabled><i class="fas fa-chevron-left"></i></button>
+        <button class="nav-btn" id="nextBtn" onclick="nextSlide()"><i class="fas fa-chevron-right"></i></button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const progressBar = document.getElementById('progressBar');
+
+        function updateSlides() {
+            slides.forEach((slide, index) => {
+                if(index === currentSlide) {
+                    slide.classList.add('active');
+                    slide.style.transform = 'translateX(0)';
+                } else if (index < currentSlide) {
+                    slide.classList.remove('active');
+                    slide.style.transform = 'translateX(-50px)';
+                } else {
+                    slide.classList.remove('active');
+                    slide.style.transform = 'translateX(50px)';
+                }
+            });
+
+            prevBtn.disabled = currentSlide === 0;
+            nextBtn.disabled = currentSlide === slides.length - 1;
+            
+            const progress = ((currentSlide) / (slides.length - 1)) * 100;
+            progressBar.style.width = progress + '%';
+        }
+
+        function nextSlide() {
+            if (currentSlide < slides.length - 1) {
+                currentSlide++;
+                updateSlides();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlides();
+            }
+        }
+
+        // Navegação pelo teclado
+        document.addEventListener('keydown', (e) => {
+            if(e.key === 'ArrowRight' || e.key === 'Space' || e.key === 'Enter') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                prevSlide();
+            }
+        });
+    </script>
+</body>
+</html>
