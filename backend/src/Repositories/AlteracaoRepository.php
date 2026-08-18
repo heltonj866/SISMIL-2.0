@@ -17,21 +17,29 @@ class AlteracaoRepository {
         return $stmt->fetchAll();
     }
 
-    public function save(array $data): void {
+    public function save(array $data, ?string $arquivoPath = null): void {
         $id = (int)($data['id'] ?? 0);
-        $militarId   = (int)($data['militar_id'] ?? 0);
-        $tipo        = $data['tipo_alteracao'] ?? '';
-        $descricao   = $data['descricao'] ?? '';
-        $dataFato    = $data['data_fato'] ?? date('Y-m-d');
-        $operadorId  = $_SESSION['usuario_id'] ?? null;
-        $operadorNome= $_SESSION['usuario_nome'] ?? null;
+        $militarId   = (int)($data['s1_militar_id'] ?? 0);
+        $categoria   = $data['s1_cat'] ?? '';
+        $tipoDetalhe = $data['s1_tipo'] ?? '';
+        $descricao   = $data['s1_desc'] ?? '';
+        $dataFato    = $data['s1_data'] ?? date('Y-m-d');
+        $documentoRef = $data['s1_doc'] ?? '';
+        $qtdDias     = (int)($data['s1_dias'] ?? 0);
+        $registradoPor = $_SESSION['usuario_nome'] ?? 'Sistema';
 
         if ($id > 0) {
-            $stmt = $this->db->prepare("UPDATE tb_alteracoes SET tipo_alteracao=?, descricao=?, data_fato=? WHERE id=?");
-            $stmt->execute([$tipo, $descricao, $dataFato, $id]);
+            // Se houver arquivo novo, atualiza. Se não, mantém o anterior.
+            if ($arquivoPath) {
+                $stmt = $this->db->prepare("UPDATE tb_alteracoes SET categoria=?, tipo_detalhe=?, descricao=?, data_fato=?, documento_ref=?, qtd_dias=?, arquivo_path=? WHERE id=?");
+                $stmt->execute([$categoria, $tipoDetalhe, $descricao, $dataFato, $documentoRef, $qtdDias, $arquivoPath, $id]);
+            } else {
+                $stmt = $this->db->prepare("UPDATE tb_alteracoes SET categoria=?, tipo_detalhe=?, descricao=?, data_fato=?, documento_ref=?, qtd_dias=? WHERE id=?");
+                $stmt->execute([$categoria, $tipoDetalhe, $descricao, $dataFato, $documentoRef, $qtdDias, $id]);
+            }
         } else {
-            $stmt = $this->db->prepare("INSERT INTO tb_alteracoes (militar_id, tipo_alteracao, descricao, data_fato, operador_id, operador_nome) VALUES (?,?,?,?,?,?)");
-            $stmt->execute([$militarId, $tipo, $descricao, $dataFato, $operadorId, $operadorNome]);
+            $stmt = $this->db->prepare("INSERT INTO tb_alteracoes (militar_id, categoria, tipo_detalhe, descricao, data_fato, documento_ref, qtd_dias, arquivo_path, registrado_por) VALUES (?,?,?,?,?,?,?,?,?)");
+            $stmt->execute([$militarId, $categoria, $tipoDetalhe, $descricao, $dataFato, $documentoRef, $qtdDias, $arquivoPath, $registradoPor]);
         }
     }
 

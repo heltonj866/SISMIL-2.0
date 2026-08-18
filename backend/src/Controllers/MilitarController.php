@@ -182,13 +182,29 @@ class MilitarController {
         validate_csrf();
         
         try {
+            $arquivoPath = null;
+            if (isset($_FILES['s1_file']) && $_FILES['s1_file']['error'] === UPLOAD_ERR_OK) {
+                $uploadService = new \Sismil\Services\UploadService();
+                $arquivoPath = $uploadService->validarEProcessarUpload(
+                    's1_file',
+                    ['pdf', 'jpg', 'jpeg', 'png'],
+                    ['application/pdf', 'image/jpeg', 'image/png'],
+                    __DIR__ . '/../../../uploads/s1/',
+                    's1_'
+                );
+                // Salvar apenas "s1/nome_do_arquivo.ext"
+                if ($arquivoPath) {
+                    $arquivoPath = 's1/' . $arquivoPath;
+                }
+            }
+
             $repo = new AlteracaoRepository();
-            $repo->save($_POST);
-            \Sismil\Services\AuditLogger::log('SAVE_ALTERACAO', 'Alteração de histórico salva.');
+            $repo->save($_POST, $arquivoPath);
+            \Sismil\Services\AuditLogger::log('SAVE_ALTERACAO', 'Alteração de histórico salva. Tipo: ' . ($_POST['s1_tipo'] ?? ''));
             Response::json(null, 'Alteração salva com sucesso.');
         } catch (\Exception $e) {
             error_log('[SISMIL] Erro ao salvar alteração: ' . $e->getMessage());
-            Response::error('Erro ao salvar alteração.', 500);
+            Response::error('Erro ao salvar alteração: ' . $e->getMessage(), 500);
         }
     }
 
