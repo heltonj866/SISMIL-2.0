@@ -3,8 +3,23 @@ Header always set X-Content-Type-Options "nosniff"
 Header always set X-Frame-Options "SAMEORIGIN"
 Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://viacep.com.br"
 
+# Bloqueia acesso direto a arquivos de configuração e diretórios internos
+<FilesMatch "(?i)^(config(\.example)?\.php|\.env|\.git.*)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Bloqueia acesso direto a pastas de código-fonte interno
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # Bloqueia acesso direto à pasta src/ e database/
+    RewriteRule ^(src|database)/ - [F,L,NC]
     
     # Redireciona tudo que começar com /api para o index.php (FrontController)
     # Por exemplo: /sismil/backend/api/militar/search -> /sismil/backend/index.php

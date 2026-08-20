@@ -1,0 +1,34 @@
+# ==============================================================================
+# SISMIL 2.0 - Proteção Estrita do Diretório de Uploads
+# Impede a execução de quaisquer scripts (PHP, CGI, Shell, etc.)
+# ==============================================================================
+
+# 1. Desativa a listagem de diretório e execução de scripts CGI
+Options -Indexes -ExecCGI
+
+# 2. Desativa o interpretador PHP para este diretório e subdiretórios
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>
+
+# 3. Bloqueia terminantemente qualquer tentativa de acesso a arquivos de script
+<FilesMatch "(?i)\.(php|phtml|php3|php4|php5|php7|php8|phar|inc|pl|py|cgi|sh|bash|exe|bat|cmd|dll|bin|com|htaccess|htpasswd)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# 4. Cabeçalho de segurança para prevenir MIME Sniffing
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+</IfModule>

@@ -65,7 +65,7 @@ class ArranchamentoController {
             Response::json(null, "Arranchamento registrado com sucesso.");
         } catch (\Exception $e) {
             error_log("[SISMIL] Erro ao salvar arranchamento: " . $e->getMessage());
-            Response::error($e->getMessage(), 500);
+            Response::error('Erro ao registrar arranchamento. Tente novamente.', 500);
         }
     }
     

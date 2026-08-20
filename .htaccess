@@ -1,6 +1,23 @@
+Options -Indexes
+
+# Bloqueia acesso direto a arquivos sensíveis e de configuração do projeto
+<FilesMatch "(?i)^(\.git.*|\.env.*|.*\.md|.*\.sh|package(-lock)?\.json|.*\.stackdump|.*\.sql|.*\.bak.*)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /sismil/
+
+  # Bloqueia acesso à pasta .git via web
+  RewriteRule ^\.git - [F,L,NC]
+  RewriteRule ^docs/ - [F,L,NC]
 
   # ==============================================================
   # PRODUÇÃO: Descomentar o bloco abaixo para forçar HTTPS

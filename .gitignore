@@ -11,3 +11,9 @@
 /backend/config.php
 # Backups gerados pelo setup_producao.sh
 *.bak_sismil
+*.bak
+*.sql
+*.stackdump
+migrate_*.php
+backend/migrate_*.php
+.env
