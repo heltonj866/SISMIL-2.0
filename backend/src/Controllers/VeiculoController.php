@@ -38,7 +38,7 @@ class VeiculoController {
             if (strpos($raw, '1062') !== false || strpos($raw, 'Duplicate entry') !== false) {
                 Response::error('Já existe um veículo cadastrado com esta placa.', 409);
             }
-            Response::error('Erro ao salvar veículo.', 500);
+            Response::error('Erro ao salvar veículo: ' . $e->getMessage(), 500);
         }
     }
     

@@ -62,6 +62,19 @@ class VeiculoRepository {
         return $stmt->fetchAll();
     }
 
+    private function getExistingColumns(): array {
+        static $cols = null;
+        if ($cols === null) {
+            try {
+                $stmt = $this->db->query("SHOW COLUMNS FROM tb_veiculos");
+                $cols = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            } catch (\Exception $e) {
+                $cols = ['id', 'militar_id', 'tipo_veiculo', 'marca', 'modelo', 'cor', 'placa', 'emissao_crlv', 'validade_crlv', 'pdf_veiculo', 'homologado', 'observacao_s2'];
+            }
+        }
+        return $cols;
+    }
+
     public function findById(int $id) {
         $stmt = $this->db->prepare("SELECT * FROM tb_veiculos WHERE id = ?");
         $stmt->execute([$id]);
@@ -69,25 +82,41 @@ class VeiculoRepository {
     }
 
     public function insert(array $dados): int {
-        $sql = "INSERT INTO tb_veiculos (
-            militar_id, tipo_veiculo, marca, modelo, cor, proprietario_nome, proprietario_parentesco, placa, emissao_crlv, pdf_veiculo, pdf_comprovante_vinculo
-        ) VALUES (
-            :militar_id, :tipo_veiculo, :marca, :modelo, :cor, :proprietario_nome, :proprietario_parentesco, :placa, :emissao_crlv, :pdf_veiculo, :pdf_comprovante_vinculo
-        )";
-        $this->db->prepare($sql)->execute($dados);
+        $existingCols = $this->getExistingColumns();
+        $fields = [];
+        $placeholders = [];
+        $params = [];
+
+        foreach ($dados as $key => $val) {
+            $colName = ltrim($key, ':');
+            if (in_array($colName, $existingCols, true)) {
+                $fields[] = $colName;
+                $placeholders[] = $key;
+                $params[$key] = $val;
+            }
+        }
+
+        $sql = "INSERT INTO tb_veiculos (" . implode(', ', $fields) . ") VALUES (" . implode(', ', $placeholders) . ")";
+        $this->db->prepare($sql)->execute($params);
         return (int)$this->db->lastInsertId();
     }
 
     public function update(array $dados): void {
+        $existingCols = $this->getExistingColumns();
         $setClauses = [];
         $params = [':id' => $dados[':id']];
+
         foreach ($dados as $key => $val) {
             if ($key === ':id' || $key === ':militar_id') continue; // militar_id não muda
             $colName = ltrim($key, ':');
-            $setClauses[] = "$colName = $key";
-            $params[$key] = $val;
+            if (in_array($colName, $existingCols, true)) {
+                $setClauses[] = "$colName = $key";
+                $params[$key] = $val;
+            }
         }
-        
+
+        if (empty($setClauses)) return;
+
         $sql = "UPDATE tb_veiculos SET " . implode(', ', $setClauses) . " WHERE id = :id";
         $this->db->prepare($sql)->execute($params);
     }
