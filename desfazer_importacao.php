@@ -38,6 +38,9 @@ try {
 
 // 1. Le os identificadores da planilha para remover apenas eles
 $conteudo = file_get_contents($csvFile);
+// Remove UTF-8 BOM
+$conteudo = preg_replace('/^\xEF\xBB\xBF/', '', $conteudo);
+
 $linhas = explode("\n", str_replace(["\r\n", "\r"], "\n", $conteudo));
 $primeiraLinha = trim($linhas[0]);
 
@@ -51,6 +54,7 @@ rewind($handle);
 
 $cabecalho = fgetcsv($handle, 0, $delimitador);
 $removidos = 0;
+$jaRemovidosIds = [];
 
 $uploadsDir = __DIR__ . '/uploads/';
 
@@ -59,22 +63,27 @@ echo "[+] Localizando e removendo apenas os militares presentes no militares.csv
 while (($linha = fgetcsv($handle, 0, $delimitador)) !== false) {
     if (empty(array_filter($linha))) continue;
 
-    // Procura por qualquer coluna que tenha o numero da identidade ou CPF daquela linha
+    // Procura por qualquer coluna que tenha o numero da identidade, CPF ou Nome daquela linha
     foreach ($linha as $val) {
         $valLimpo = trim($val);
-        if (empty($valLimpo)) continue;
+        if (empty($valLimpo) || strlen($valLimpo) < 3) continue;
 
-        // Se o valor tiver formato de identidade ou CPF
         $apenasNum = preg_replace('/\D/', '', $valLimpo);
         
         $militar = null;
-        if (strlen($valLimpo) >= 3) {
-            $stmt = $db->prepare("SELECT id, posto_grad, nome_guerra, idt_militar, foto_path FROM tb_militares WHERE idt_militar = ? OR cpf = ? LIMIT 1");
-            $stmt->execute([$valLimpo, $apenasNum]);
+        if (!empty($apenasNum) && strlen($apenasNum) >= 5) {
+            $stmt = $db->prepare("SELECT id, posto_grad, nome_guerra, idt_militar, foto_path FROM tb_militares WHERE idt_militar = ? OR idt_militar = ? OR cpf = ? LIMIT 1");
+            $stmt->execute([$valLimpo, $apenasNum, $apenasNum]);
+            $militar = $stmt->fetch();
+        } else {
+            $stmt = $db->prepare("SELECT id, posto_grad, nome_guerra, idt_militar, foto_path FROM tb_militares WHERE idt_militar = ? OR nome_completo = ? LIMIT 1");
+            $stmt->execute([$valLimpo, $valLimpo]);
             $militar = $stmt->fetch();
         }
 
-        if ($militar) {
+        if ($militar && !in_array($militar['id'], $jaRemovidosIds, true)) {
+            $jaRemovidosIds[] = $militar['id'];
+
             // Remove foto se foi gerada recentemente
             if (!empty($militar['foto_path']) && strpos($militar['foto_path'], 'foto_') === 0) {
                 $fotoFile = $uploadsDir . $militar['foto_path'];
@@ -85,8 +94,8 @@ while (($linha = fgetcsv($handle, 0, $delimitador)) !== false) {
             $del = $db->prepare("DELETE FROM tb_militares WHERE id = ?");
             $del->execute([$militar['id']]);
             $removidos++;
-            echo " [-] Removido: ID {$militar['id']} - {$militar['posto_grad']} {$militar['nome_guerra']} (Idt: {$militar['idt_militar']})\n";
-            break; // Ja removeu este militar da linha, passa para a proxima
+            echo " [-] Removido com sucesso: ID {$militar['id']} - {$militar['posto_grad']} {$militar['nome_guerra']} (Idt: {$militar['idt_militar']})\n";
+            break;
         }
     }
 }
@@ -94,6 +103,6 @@ while (($linha = fgetcsv($handle, 0, $delimitador)) !== false) {
 fclose($handle);
 
 echo "\n========================================================\n";
-echo " [+] Total de militares removidos da importacao: {$removidos}\n";
-echo " [+] Os militares antigos anteriores continuam 100% intactos.\n";
+echo " [+] Total de militares da importacao removidos: {$removidos}\n";
+echo " [+] Seus militares anteriores continuam 100% preservados.\n";
 echo "========================================================\n\n";
