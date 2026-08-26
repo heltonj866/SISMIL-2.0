@@ -188,15 +188,26 @@ foreach ($mapaColunas as $campo => $idx) {
 }
 echo "\n";
 
-// Funcao auxiliar para formatar datas (DD/MM/AAAA -> AAAA-MM-DD)
 function formatarDataBanco($valor) {
     if (empty($valor)) return null;
     $v = trim($valor);
     if (preg_match('/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/', $v, $m)) {
         return sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
     }
+    if (preg_match('/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2})$/', $v, $m)) {
+        $ano = (int)$m[3];
+        $anoComp = ($ano > 50) ? (1900 + $ano) : (2000 + $ano);
+        return sprintf('%04d-%02d-%02d', $anoComp, $m[2], $m[1]);
+    }
     if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $v)) {
         return $v;
+    }
+    if (preg_match('/^\d{4}$/', $v)) {
+        return $v . '-01-01';
+    }
+    if (is_numeric($v) && (int)$v > 20000 && (int)$v < 60000) {
+        $timestamp = ((int)$v - 25569) * 86400;
+        return gmdate('Y-m-d', $timestamp);
     }
     return null;
 }
