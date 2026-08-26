@@ -131,36 +131,45 @@ if (!$cabecalho) {
     die("ERRO: Nao foi possivel ler o cabecalho do CSV.\n");
 }
 
+function normalizarCabecalho($str) {
+    $str = mb_strtolower($str, 'UTF-8');
+    $str = str_replace(
+        ['á','à','â','ã','ä','é','è','ê','ë','í','ì','î','ï','ó','ò','ô','õ','ö','ú','ù','û','ü','ç','-','_','/','\\','.'],
+        ['a','a','a','a','a','e','e','e','e','i','i','i','i','o','o','o','o','o','u','u','u','u','c',' ',' ',' ',' ',' '],
+        $str
+    );
+    $str = preg_replace('/[^a-z0-9\s]/', '', $str);
+    return trim(preg_replace('/\s+/', ' ', $str));
+}
+
 // Limpa cada coluna do cabecalho
 $mapaColunas = [];
 $sinonimos = [
-    'posto_grad'       => ['pg', 'posto', 'posto/grad', 'posto_grad', 'graduacao', 'posto_graduacao', 'posto/graduação', 'p/g', 'grad'],
-    'numero'           => ['nr', 'numero', 'nº', 'num', 'numero_militar', 'n'],
-    'nome_guerra'      => ['nome de guerra', 'nome_guerra', 'nome guerra', 'guerra', 'nome_de_guerra'],
-    'nome_completo'    => ['nome completo', 'nome_completo', 'nome', 'militar', 'nome_militar'],
-    'dt_nascimento'    => ['dt nasc', 'dt_nasc', 'data nascimento', 'nascimento', 'data_nasc', 'data_nascimento'],
-    'dt_praca'         => ['dt praca', 'dt praça', 'dt_praca', 'data praca', 'data praça', 'praca', 'praça', 'dt_incorporacao', 'incorporacao'],
-    'idt_militar'      => ['idt mil', 'identidade', 'idt', 'idt militar', 'idt_militar', 'identidade militar', 'rg', 'identidade_militar'],
+    'posto_grad'       => ['pg', 'posto', 'posto grad', 'graduacao', 'posto graduacao', 'p g', 'grad'],
+    'numero'           => ['nr', 'numero', 'n', 'num', 'numero militar'],
+    'nome_guerra'      => ['nome de guerra', 'nome guerra', 'guerra'],
+    'nome_completo'    => ['nome completo', 'nome', 'militar', 'nome militar'],
+    'dt_nascimento'    => ['dt nasc', 'dt nascimento', 'data nascimento', 'nascimento', 'data nasc'],
+    'dt_praca'         => ['dt praca', 'data praca', 'praca', 'dt incorporacao', 'incorporacao'],
+    'idt_militar'      => ['idt mil', 'identidade', 'idt', 'idt militar', 'identidade militar', 'rg'],
     'cpf'              => ['cpf', 'cic'],
-    'nome_pai'         => ['pai', 'nome pai', 'nome_pai', 'filiacao_pai'],
-    'nome_mae'         => ['mae', 'mãe', 'nome mae', 'nome mãe', 'nome_mae', 'filiacao_mae'],
-    'endereco'         => ['endereco', 'endereço', 'rua', 'logradouro'],
+    'nome_pai'         => ['pai', 'nome pai', 'filiacao pai'],
+    'nome_mae'         => ['mae', 'nome mae', 'filiacao mae'],
+    'endereco'         => ['endereco', 'rua', 'logradouro'],
     'cep'              => ['cep'],
-    'email'            => ['e-mail', 'email', 'e_mail', 'correio_eletronico'],
-    'celular_princ'    => ['telefone', 'tel', 'celular', 'celular_princ', 'contato', 'celular_principal'],
-    'subunidade'       => ['subunidade', 'su', 'cia', 'companhia', 'sub_unidade'],
-    'pelotao'          => ['pelotao', 'pelotão', 'pel'],
-    'secao'            => ['secao', 'seção', 'sec'],
+    'email'            => ['email', 'e mail', 'correio eletronico'],
+    'celular_princ'    => ['telefone', 'tel', 'celular', 'celular princ', 'contato', 'celular principal'],
+    'subunidade'       => ['subunidade', 'su', 'cia', 'companhia', 'sub unidade'],
+    'pelotao'          => ['pelotao', 'pel'],
+    'secao'            => ['secao', 'sec'],
     'qmg'              => ['qmg', 'qualificacao', 'arma'],
-    'tipo_sanguineo'   => ['tipo_sanguineo', 'sangue', 'fator rh', 'tipo sanguineo'],
-    'cat_cnh'          => ['cnh', 'cat_cnh', 'categoria cnh'],
-    'validade_cnh'     => ['validade_cnh', 'validade cnh', 'vencimento cnh']
+    'tipo_sanguineo'   => ['tipo sanguineo', 'sangue', 'fator rh'],
+    'cat_cnh'          => ['cnh', 'cat cnh', 'categoria cnh'],
+    'validade_cnh'     => ['validade cnh', 'vencimento cnh']
 ];
 
 foreach ($cabecalho as $idx => $colOriginal) {
-    // Remove aspas, acentos e caracteres estranhos para comparar
-    $colLimpa = strtolower(trim(preg_replace('/[^a-zA-Z0-9_\/]/', ' ', $colOriginal)));
-    $colLimpa = preg_replace('/\s+/', ' ', $colLimpa);
+    $colLimpa = normalizarCabecalho($colOriginal);
     
     // Ignora GPT expressamente
     if ($colLimpa === 'gpt') continue;
@@ -214,7 +223,16 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
     $nomeCompleto   = strtoupper($getVal('nome_completo'));
     $numero         = $getVal('numero');
     $idtMilitar     = trim($getVal('idt_militar'));
-    $cpf            = preg_replace('/\D/', '', $getVal('cpf'));
+    
+    // Tratamento de CPF com zeros a esquerda cortados pelo Excel
+    $cpfRaw         = preg_replace('/\D/', '', $getVal('cpf'));
+    $cpf            = '';
+    $cpfPad         = '';
+    if (!empty($cpfRaw)) {
+        $cpfPad = str_pad($cpfRaw, 11, '0', STR_PAD_LEFT);
+        $cpf = sprintf('%s.%s.%s-%s', substr($cpfPad, 0, 3), substr($cpfPad, 3, 3), substr($cpfPad, 6, 3), substr($cpfPad, 9, 2));
+    }
+
     $subunidade     = strtoupper($getVal('subunidade'));
     $pelotao        = strtoupper($getVal('pelotao'));
     $secao          = strtoupper($getVal('secao'));
@@ -224,7 +242,15 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
     $nomePai        = strtoupper($getVal('nome_pai'));
     $nomeMae        = strtoupper($getVal('nome_mae'));
     $endereco       = $getVal('endereco');
-    $cep            = preg_replace('/\D/', '', $getVal('cep'));
+
+    // Tratamento de CEP com zeros a esquerda
+    $cepRaw         = preg_replace('/\D/', '', $getVal('cep'));
+    $cep            = '';
+    if (!empty($cepRaw)) {
+        $cepPad = str_pad($cepRaw, 8, '0', STR_PAD_LEFT);
+        $cep = sprintf('%s-%s', substr($cepPad, 0, 5), substr($cepPad, 5, 3));
+    }
+
     $email          = strtolower($getVal('email'));
     $celularPrinc   = $getVal('celular_princ');
     $tipoSanguineo  = strtoupper($getVal('tipo_sanguineo'));
@@ -268,7 +294,7 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
     }
 
     try {
-        // 5. Verifica se ja existe por IDENTIDADE ou CPF (apenas se tiver valor valido)
+        // 5. Verifica se ja existe por IDENTIDADE, CPF ou NOME DE GUERRA
         $militarId = null;
         if (!empty($idtMilitar) && strlen($idtMilitar) >= 3) {
             $stmt = $db->prepare("SELECT id, foto_path FROM tb_militares WHERE idt_militar = ? LIMIT 1");
@@ -279,9 +305,18 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
                 if (!$fotoPath) $fotoPath = $res['foto_path'];
             }
         }
-        if (!$militarId && !empty($cpf) && strlen($cpf) >= 7) {
-            $stmt = $db->prepare("SELECT id, foto_path FROM tb_militares WHERE cpf = ? LIMIT 1");
-            $stmt->execute([$cpf]);
+        if (!$militarId && !empty($cpfRaw)) {
+            $stmt = $db->prepare("SELECT id, foto_path FROM tb_militares WHERE cpf = ? OR cpf = ? OR cpf = ? LIMIT 1");
+            $stmt->execute([$cpf, $cpfRaw, $cpfPad]);
+            $res = $stmt->fetch();
+            if ($res) {
+                $militarId = (int)$res['id'];
+                if (!$fotoPath) $fotoPath = $res['foto_path'];
+            }
+        }
+        if (!$militarId && !empty($nomeGuerra) && !empty($postoGrad)) {
+            $stmt = $db->prepare("SELECT id, foto_path FROM tb_militares WHERE nome_guerra = ? AND posto_grad = ? LIMIT 1");
+            $stmt->execute([$nomeGuerra, $postoGrad]);
             $res = $stmt->fetch();
             if ($res) {
                 $militarId = (int)$res['id'];
@@ -290,8 +325,9 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
         }
 
         if ($militarId) {
-            // UPDATE
+            // UPDATE: Atualiza os dados que faltavam (Praça, Mãe, Email, Pai, Endereço, CPF corrigido com 11 digitos)
             $sql = "UPDATE tb_militares SET 
+                cpf = COALESCE(NULLIF(:cpf, ''), cpf),
                 posto_grad = COALESCE(NULLIF(:posto, ''), posto_grad),
                 numero = COALESCE(NULLIF(:numero, ''), numero),
                 nome_guerra = COALESCE(NULLIF(:nome_guerra, ''), nome_guerra),
@@ -310,6 +346,7 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
 
             $stmt = $db->prepare($sql);
             $stmt->execute([
+                ':cpf'            => $cpf,
                 ':posto'          => $postoGrad,
                 ':numero'         => $numero,
                 ':nome_guerra'    => $nomeGuerra,
@@ -326,7 +363,7 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
                 ':id'             => $militarId
             ]);
             $atualizados++;
-            echo " [ATUALIZADO] {$postoGrad} {$nomeGuerra} (Idt: {$idtMilitar})" . ($fotoPath ? " [📸 FOTO OK]" : "") . "\n";
+            echo " [ATUALIZADO] {$postoGrad} {$nomeGuerra} (Idt: {$idtMilitar} | CPF: {$cpf})" . ($fotoPath ? " [📸 FOTO OK]" : "") . "\n";
         } else {
             // INSERT
             $sql = "INSERT INTO tb_militares (
