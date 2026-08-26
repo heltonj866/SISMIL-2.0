@@ -104,7 +104,7 @@ if (!$cabecalho) {
 $mapaColunas = [];
 $sinonimos = [
     'posto_grad'       => ['pg', 'posto', 'posto/grad', 'posto_grad', 'graduacao', 'posto_graduacao', 'posto/graduação', 'p/g', 'grad'],
-    'subunidade'       => ['gpt', 'subunidade', 'su', 'cia', 'companhia', 'sub_unidade', 'grupamento'],
+    'subunidade'       => ['subunidade', 'su', 'cia', 'companhia', 'sub_unidade'],
     'numero'           => ['nr', 'numero', 'nº', 'num', 'numero_militar', 'n'],
     'nome_guerra'      => ['nome de guerra', 'nome_guerra', 'nome guerra', 'guerra', 'nome_de_guerra'],
     'nome_completo'    => ['nome completo', 'nome_completo', 'nome', 'militar', 'nome_militar'],
