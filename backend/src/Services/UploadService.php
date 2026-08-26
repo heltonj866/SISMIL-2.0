@@ -21,8 +21,16 @@ class UploadService {
      * @throws Exception Se o arquivo não atender aos requisitos de segurança ou falhar ao mover.
      */
     public function validarEProcessarUpload(string $file_key, array $extensoes_permitidas, array $mimes_permitidos, string $dir, string $prefixo): ?string {
-        if (!isset($_FILES[$file_key]) || $_FILES[$file_key]['error'] !== UPLOAD_ERR_OK) {
+        if (!isset($_FILES[$file_key]) || $_FILES[$file_key]['error'] === UPLOAD_ERR_NO_FILE) {
             return null;
+        }
+
+        if ($_FILES[$file_key]['error'] === UPLOAD_ERR_INI_SIZE || $_FILES[$file_key]['error'] === UPLOAD_ERR_FORM_SIZE) {
+            throw new Exception("O arquivo enviado para '{$file_key}' é muito grande (excede o limite do servidor). Envie uma imagem de até 2MB.");
+        }
+
+        if ($_FILES[$file_key]['error'] !== UPLOAD_ERR_OK) {
+            throw new Exception("Erro durante o envio do arquivo '{$file_key}' (Código {$_FILES[$file_key]['error']}).");
         }
         
         $file = $_FILES[$file_key];
@@ -34,7 +42,11 @@ class UploadService {
 
         // Validação profunda com Magic Bytes
         $mime_real = mime_content_type($file['tmp_name']);
-        if (!in_array($mime_real, $mimes_permitidos, true)) {
+        // Aceita variações conhecidas de mime-types de imagem
+        $mimes_expandidos = array_merge($mimes_permitidos, [
+            'image/pjpeg', 'image/x-png', 'image/webp', 'image/jpeg', 'image/png'
+        ]);
+        if (!in_array($mime_real, $mimes_expandidos, true)) {
             throw new Exception("Conteúdo de arquivo suspeito para '{$file_key}'. MIME detectado: {$mime_real}");
         }
 

@@ -527,21 +527,63 @@ const form = ref({
 })
 
 const fileUploads = ref({ foto: null, nada_consta: null, pdf_habilitacao: null })
-const fotoPreviewUrl = ref(null)
+const comprimirImagem = (file, maxDim = 1000, quality = 0.88) => {
+  return new Promise((resolve) => {
+    if (!file || !file.type.startsWith('image/')) return resolve(file)
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      let w = img.width
+      let h = img.height
+      if (w > maxDim || h > maxDim) {
+        if (w > h) {
+          h = Math.round((h * maxDim) / w)
+          w = maxDim
+        } else {
+          w = Math.round((w * maxDim) / h)
+          h = maxDim
+        }
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, w, h)
+      canvas.toBlob((blob) => {
+        if (!blob) return resolve(file)
+        const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, '') + '.jpg', {
+          type: 'image/jpeg',
+          lastModified: Date.now()
+        })
+        resolve(compressedFile)
+      }, 'image/jpeg', quality)
+    }
+    img.onerror = () => resolve(file)
+    img.src = url
+  })
+}
 
-const handleFileChange = (e, type) => {
+const handleFileChange = async (e, type) => {
   const file = e.target.files.length > 0 ? e.target.files[0] : null
-  fileUploads.value[type] = file
-  
+  if (!file) {
+    fileUploads.value[type] = null
+    if (type === 'foto' && fotoPreviewUrl.value) {
+      URL.revokeObjectURL(fotoPreviewUrl.value)
+      fotoPreviewUrl.value = null
+    }
+    return
+  }
+
   if (type === 'foto') {
+    const fotoPronta = await comprimirImagem(file)
+    fileUploads.value.foto = fotoPronta
     if (fotoPreviewUrl.value) {
       URL.revokeObjectURL(fotoPreviewUrl.value)
     }
-    if (file) {
-      fotoPreviewUrl.value = URL.createObjectURL(file)
-    } else {
-      fotoPreviewUrl.value = null
-    }
+    fotoPreviewUrl.value = URL.createObjectURL(fotoPronta)
+  } else {
+    fileUploads.value[type] = file
   }
 }
 const onImgError = (e) => { e.target.src = '/sismil/assets/sem_foto.png' }

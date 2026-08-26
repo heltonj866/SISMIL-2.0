@@ -93,7 +93,7 @@ class MilitarController {
                 }
                 Response::error($msg, 409);
             }
-            Response::error('Erro ao salvar militar.', 500);
+            Response::error($e->getMessage(), 400);
         }
     }
     
