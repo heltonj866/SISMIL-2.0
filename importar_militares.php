@@ -53,17 +53,23 @@ if (is_dir($fotosDir)) {
         if ($arq === '.' || $arq === '..') continue;
         $caminhoCompleto = $fotosDir . $arq;
         if (is_file($caminhoCompleto)) {
-            // Extrai somente os numeros do nome do arquivo (ex: "012345678-9.jpg" -> "0123456789")
-            $apenasNumeros = preg_replace('/\D/', '', pathinfo($arq, PATHINFO_FILENAME));
+            $ext = strtolower(pathinfo($arq, PATHINFO_EXTENSION));
+            if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) continue;
+
+            $nomeSemExt = pathinfo($arq, PATHINFO_FILENAME);
+
+            // 1. Guarda pelo numero puro da identidade (ex: "0123456789.JPG" -> "0123456789")
+            $apenasNumeros = preg_replace('/\D/', '', $nomeSemExt);
             if (!empty($apenasNumeros)) {
                 $fotosMap[$apenasNumeros] = $caminhoCompleto;
             }
-            // Guarda tambem pelo nome exato sem extensao em maiusculo
-            $nomeLimpo = strtoupper(trim(pathinfo($arq, PATHINFO_FILENAME)));
+
+            // 2. Guarda pelo texto exato sem extensao
+            $nomeLimpo = strtoupper(trim($nomeSemExt));
             $fotosMap[$nomeLimpo] = $caminhoCompleto;
         }
     }
-    echo "[+] Fotos encontradas na pasta_fotos: " . count($fotosMap) . " arquivos.\n";
+    echo "[+] Fotos reconhecidas na pasta_fotos: " . count($fotosMap) . " arquivos.\n";
 } else {
     echo "[!] Aviso: Pasta 'pasta_fotos/' nao encontrada. Importando apenas dados da planilha.\n";
 }
@@ -79,10 +85,10 @@ $linhas = explode("\n", str_replace(["\r\n", "\r"], "\n", $conteudo));
 $primeiraLinha = trim($linhas[0]);
 
 $delimitador = ';';
-if (substr_count($primeiraLinha, ',') > substr_count($primeiraLinha, ';')) {
-    $delimitador = ',';
-} elseif (substr_count($primeiraLinha, "\t") > substr_count($primeiraLinha, ';')) {
+if (substr_count($primeiraLinha, "\t") >= substr_count($primeiraLinha, ';') && substr_count($primeiraLinha, "\t") > 0) {
     $delimitador = "\t";
+} elseif (substr_count($primeiraLinha, ',') > substr_count($primeiraLinha, ';')) {
+    $delimitador = ',';
 }
 
 $handle = fopen('php://memory', 'r+');
@@ -94,30 +100,30 @@ if (!$cabecalho) {
     die("ERRO: Nao foi possivel ler o cabecalho do CSV.\n");
 }
 
-// Normaliza cabecalho
+// Normaliza cabecalho com suporte exato aos campos informados
 $mapaColunas = [];
 $sinonimos = [
-    'posto_grad'       => ['posto', 'posto/grad', 'posto_grad', 'graduacao', 'posto_graduacao', 'posto/graduação', 'p/g', 'grad'],
+    'posto_grad'       => ['pg', 'posto', 'posto/grad', 'posto_grad', 'graduacao', 'posto_graduacao', 'posto/graduação', 'p/g', 'grad'],
+    'subunidade'       => ['gpt', 'subunidade', 'su', 'cia', 'companhia', 'sub_unidade', 'grupamento'],
+    'numero'           => ['nr', 'numero', 'nº', 'num', 'numero_militar', 'n'],
     'nome_guerra'      => ['nome de guerra', 'nome_guerra', 'nome guerra', 'guerra', 'nome_de_guerra'],
     'nome_completo'    => ['nome completo', 'nome_completo', 'nome', 'militar', 'nome_militar'],
-    'numero'           => ['numero', 'nr', 'nº', 'num', 'numero_militar'],
-    'idt_militar'      => ['identidade', 'idt', 'idt militar', 'idt_militar', 'identidade militar', 'rg', 'identidade_militar'],
+    'dt_nascimento'    => ['dt nasc', 'dt_nascimento', 'data nascimento', 'nascimento', 'data_nasc', 'dt_nasc', 'data_nascimento'],
+    'dt_praca'         => ['dt praca', 'dt praça', 'dt_praca', 'data praca', 'data praça', 'praca', 'praça', 'dt_incorporacao', 'incorporacao'],
+    'idt_militar'      => ['idt mil', 'identidade', 'idt', 'idt militar', 'idt_militar', 'identidade militar', 'rg', 'identidade_militar'],
     'cpf'              => ['cpf', 'cic'],
-    'subunidade'       => ['subunidade', 'su', 'cia', 'companhia', 'sub_unidade'],
+    'nome_pai'         => ['pai', 'nome pai', 'nome_pai', 'filiacao_pai'],
+    'nome_mae'         => ['mae', 'mãe', 'nome mae', 'nome mãe', 'nome_mae', 'filiacao_mae'],
+    'endereco'         => ['endereco', 'endereço', 'rua', 'logradouro'],
+    'cep'              => ['cep'],
+    'email'            => ['e-mail', 'email', 'e_mail', 'correio_eletronico'],
+    'celular_princ'    => ['telefone', 'tel', 'celular', 'celular_princ', 'contato', 'celular_principal'],
     'pelotao'          => ['pelotao', 'pelotão', 'pel'],
     'secao'            => ['secao', 'seção', 'sec'],
-    'qmg'              => ['qmg', 'qualificacao', 'arma', 'quadro', 'servico'],
-    'dt_nascimento'    => ['dt_nascimento', 'data nascimento', 'nascimento', 'data_nasc', 'dt_nasc', 'data_nascimento'],
-    'dt_praca'         => ['dt_praca', 'data praca', 'data praça', 'praca', 'praça', 'dt_incorporacao', 'incorporacao', 'data_praca'],
-    'tipo_sanguineo'   => ['tipo_sanguineo', 'sangue', 'fator rh', 'tipo sanguineo', 'grupo_sanguineo'],
-    'celular_princ'    => ['celular', 'celular_princ', 'telefone', 'tel', 'contato', 'celular_principal'],
-    'endereco'         => ['endereco', 'endereço', 'rua', 'logradouro'],
-    'bairro'           => ['bairro'],
-    'cidade'           => ['cidade', 'municipio'],
-    'estado'           => ['estado', 'uf'],
-    'cep'              => ['cep'],
-    'cat_cnh'          => ['cnh', 'cat_cnh', 'categoria cnh', 'cat cnh', 'categoria_cnh'],
-    'validade_cnh'     => ['validade_cnh', 'validade cnh', 'vencimento cnh', 'val_cnh', 'validade_da_cnh']
+    'qmg'              => ['qmg', 'qualificacao', 'arma'],
+    'tipo_sanguineo'   => ['tipo_sanguineo', 'sangue', 'fator rh', 'tipo sanguineo'],
+    'cat_cnh'          => ['cnh', 'cat_cnh', 'categoria cnh'],
+    'validade_cnh'     => ['validade_cnh', 'validade cnh', 'vencimento cnh']
 ];
 
 foreach ($cabecalho as $idx => $colOriginal) {
@@ -132,7 +138,7 @@ foreach ($cabecalho as $idx => $colOriginal) {
     }
 }
 
-echo "[+] Mapeamento de colunas detectado:\n";
+echo "[+] Mapeamento de colunas detectado com sucesso:\n";
 foreach ($mapaColunas as $campo => $idx) {
     echo "    - {$campo} => Coluna: " . ($cabecalho[$idx] ?? $idx) . "\n";
 }
@@ -184,13 +190,13 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
     $qmg            = strtoupper($getVal('qmg'));
     $dtNascimento   = formatarDataBanco($getVal('dt_nascimento'));
     $dtPraca        = formatarDataBanco($getVal('dt_praca'));
-    $tipoSanguineo  = strtoupper($getVal('tipo_sanguineo'));
-    $celularPrinc   = $getVal('celular_princ');
+    $nomePai        = strtoupper($getVal('nome_pai'));
+    $nomeMae        = strtoupper($getVal('nome_mae'));
     $endereco       = $getVal('endereco');
-    $bairro         = $getVal('bairro');
-    $cidade         = $getVal('cidade');
-    $estado         = strtoupper($getVal('estado'));
     $cep            = preg_replace('/\D/', '', $getVal('cep'));
+    $email          = strtolower($getVal('email'));
+    $celularPrinc   = $getVal('celular_princ');
+    $tipoSanguineo  = strtoupper($getVal('tipo_sanguineo'));
     $catCnh         = strtoupper($getVal('cat_cnh'));
     $validadeCnh    = formatarDataBanco($getVal('validade_cnh'));
 
@@ -204,7 +210,7 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
 
     if (empty($postoGrad)) $postoGrad = 'SD EP';
 
-    // 4. Busca da Foto correspondente
+    // 4. Busca da Foto correspondente por Identidade (ex: 0123456789.JPG)
     $fotoPath = null;
     $idtNumeros = preg_replace('/\D/', '', $idtMilitar);
     $cpfNumeros = preg_replace('/\D/', '', $cpf);
@@ -212,6 +218,8 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
     $origemFoto = null;
     if (!empty($idtNumeros) && isset($fotosMap[$idtNumeros])) {
         $origemFoto = $fotosMap[$idtNumeros];
+    } elseif (!empty($idtMilitar) && isset($fotosMap[strtoupper($idtMilitar)])) {
+        $origemFoto = $fotosMap[strtoupper($idtMilitar)];
     } elseif (!empty($cpfNumeros) && isset($fotosMap[$cpfNumeros])) {
         $origemFoto = $fotosMap[$cpfNumeros];
     } elseif (!empty($nomeGuerra) && isset($fotosMap[$nomeGuerra])) {
@@ -266,13 +274,13 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
                 qmg = COALESCE(NULLIF(:qmg, ''), qmg),
                 dt_nascimento = COALESCE(:dt_nascimento, dt_nascimento),
                 dt_praca = COALESCE(:dt_praca, dt_praca),
-                tipo_sanguineo = COALESCE(NULLIF(:tipo_sanguineo, ''), tipo_sanguineo),
+                nome_pai = COALESCE(NULLIF(:nome_pai, ''), nome_pai),
+                nome_mae = COALESCE(NULLIF(:nome_mae, ''), nome_mae),
+                email = COALESCE(NULLIF(:email, ''), email),
                 celular_princ = COALESCE(NULLIF(:celular_princ, ''), celular_princ),
                 endereco = COALESCE(NULLIF(:endereco, ''), endereco),
-                bairro = COALESCE(NULLIF(:bairro, ''), bairro),
-                cidade = COALESCE(NULLIF(:cidade, ''), cidade),
-                estado = COALESCE(NULLIF(:estado, ''), estado),
                 cep = COALESCE(NULLIF(:cep, ''), cep),
+                tipo_sanguineo = COALESCE(NULLIF(:tipo_sanguineo, ''), tipo_sanguineo),
                 cat_cnh = COALESCE(NULLIF(:cat_cnh, ''), cat_cnh),
                 validade_cnh = COALESCE(:validade_cnh, validade_cnh),
                 foto_path = COALESCE(:foto_path, foto_path),
@@ -291,30 +299,30 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
                 ':qmg'            => $qmg,
                 ':dt_nascimento'  => $dtNascimento,
                 ':dt_praca'       => $dtPraca,
-                ':tipo_sanguineo' => $tipoSanguineo,
+                ':nome_pai'       => $nomePai,
+                ':nome_mae'       => $nomeMae,
+                ':email'          => $email,
                 ':celular_princ'  => $celularPrinc,
                 ':endereco'       => $endereco,
-                ':bairro'         => $bairro,
-                ':cidade'         => $cidade,
-                ':estado'         => $estado,
                 ':cep'            => $cep,
+                ':tipo_sanguineo' => $tipoSanguineo,
                 ':cat_cnh'        => $catCnh,
                 ':validade_cnh'   => $validadeCnh,
                 ':foto_path'      => $fotoPath,
                 ':id'             => $militarId
             ]);
             $atualizados++;
-            echo " [ATUALIZADO] {$postoGrad} {$nomeGuerra} (ID {$militarId})" . ($fotoPath ? " [FOTO OK]" : "") . "\n";
+            echo " [ATUALIZADO] {$postoGrad} {$nomeGuerra} (ID {$militarId})" . ($fotoPath ? " [📸 FOTO VINCULADA]" : "") . "\n";
         } else {
             // INSERT
             $sql = "INSERT INTO tb_militares (
                 cpf, posto_grad, numero, nome_guerra, subunidade, pelotao, secao, nome_completo,
-                qmg, dt_nascimento, tipo_sanguineo, dt_praca, idt_militar, celular_princ,
-                cep, endereco, bairro, cidade, estado, cat_cnh, validade_cnh, foto_path, status_ativo
+                nome_pai, nome_mae, email, qmg, dt_nascimento, tipo_sanguineo, dt_praca, idt_militar,
+                celular_princ, cep, endereco, cat_cnh, validade_cnh, foto_path, status_ativo
             ) VALUES (
                 :cpf, :posto_grad, :numero, :nome_guerra, :subunidade, :pelotao, :secao, :nome_completo,
-                :qmg, :dt_nascimento, :tipo_sanguineo, :dt_praca, :idt_militar, :celular_princ,
-                :cep, :endereco, :bairro, :cidade, :estado, :cat_cnh, :validade_cnh, :foto_path, 1
+                :nome_pai, :nome_mae, :email, :qmg, :dt_nascimento, :tipo_sanguineo, :dt_praca, :idt_militar,
+                :celular_princ, :cep, :endereco, :cat_cnh, :validade_cnh, :foto_path, 1
             )";
 
             $stmt = $db->prepare($sql);
@@ -327,6 +335,9 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
                 ':pelotao'        => $pelotao ?: null,
                 ':secao'          => $secao ?: null,
                 ':nome_completo'  => $nomeCompleto,
+                ':nome_pai'       => $nomePai ?: null,
+                ':nome_mae'       => $nomeMae ?: null,
+                ':email'          => $email ?: null,
                 ':qmg'            => $qmg ?: null,
                 ':dt_nascimento'  => $dtNascimento,
                 ':tipo_sanguineo' => $tipoSanguineo ?: null,
@@ -335,15 +346,12 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
                 ':celular_princ'  => $celularPrinc ?: null,
                 ':cep'            => $cep ?: null,
                 ':endereco'       => $endereco ?: null,
-                ':bairro'         => $bairro ?: null,
-                ':cidade'         => $cidade ?: null,
-                ':estado'         => $estado ?: null,
                 ':cat_cnh'        => $catCnh ?: null,
                 ':validade_cnh'   => $validadeCnh,
                 ':foto_path'      => $fotoPath
             ]);
             $inseridos++;
-            echo " [INSERIDO]   {$postoGrad} {$nomeGuerra}" . ($fotoPath ? " [FOTO OK]" : "") . "\n";
+            echo " [INSERIDO]   {$postoGrad} {$nomeGuerra}" . ($fotoPath ? " [📸 FOTO VINCULADA]" : "") . "\n";
         }
     } catch (Exception $e) {
         $erros++;
