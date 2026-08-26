@@ -50,17 +50,25 @@ class UploadService {
             throw new Exception("Conteúdo de arquivo suspeito para '{$file_key}'. MIME detectado: {$mime_real}");
         }
 
+        $dir = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR;
+
         if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
+            @mkdir($dir, 0775, true);
+        }
+
+        if (!is_writable($dir)) {
+            throw new Exception("Pasta de destino '{$dir}' sem permissão de escrita para o servidor web.");
         }
 
         $ext_segura = ($ext === 'pdf') ? 'pdf' : 'jpg'; // Normaliza extensões de imagem para jpg
         $novo_nome  = $prefixo . bin2hex(random_bytes(8)) . '.' . $ext_segura;
+        $destino    = $dir . $novo_nome;
 
-        if (!move_uploaded_file($file['tmp_name'], $dir . $novo_nome)) {
-            throw new Exception("Falha de IO ao mover arquivo '{$file_key}'.");
+        if (!move_uploaded_file($file['tmp_name'], $destino)) {
+            throw new Exception("Falha de IO ao mover arquivo '{$file_key}' para '{$destino}'.");
         }
         
+        @chmod($destino, 0644);
         return $novo_nome;
     }
 }
