@@ -1,6 +1,6 @@
 <?php
 // ==============================================================================
-// SISMIL 2.0 - Script de Importação de Militares e Fotos em Lote
+// SISMIL 2.0 - Script de Importação de Militares e Fotos em Lote (V2 - Aprimorada)
 // Execução: sudo php /var/www/html/sismil/importar_militares.php
 // ==============================================================================
 
@@ -13,7 +13,7 @@ echo "       SISMIL 2.0 - IMPORTADOR DE MILITARES & FOTOS     \n";
 echo "========================================================\n\n";
 
 $csvFile = __DIR__ . '/militares.csv';
-$fotosDir = __DIR__ . '/pasta_fotos/';
+$fotosDir = __DIR__ . '/pasta_fotos';
 $uploadsDir = __DIR__ . '/uploads/';
 
 if (!file_exists($csvFile)) {
@@ -30,7 +30,6 @@ $db = null;
 try {
     $db = \Sismil\Core\Database::getInstance();
 } catch (Exception $e) {
-    // Tenta conexao direta local
     try {
         require_once __DIR__ . '/backend/config.php';
         $user = defined('DB_USER_PROD') ? DB_USER_PROD : 'sismil_app';
@@ -45,37 +44,62 @@ try {
     }
 }
 
-// 2. Mapeamento de Fotos Disponiveis na pasta_fotos
+// Opcao para limpar tabela antes se o usuario desejar (passando argumento --reset)
+$isReset = in_array('--reset', $argv) || in_array('-r', $argv);
+if ($isReset) {
+    echo "[!] ATENCAO: Limpando tabela de militares antes de importar (--reset ativado)...\n";
+    $db->exec("SET FOREIGN_KEY_CHECKS = 0; TRUNCATE TABLE tb_militares; SET FOREIGN_KEY_CHECKS = 1;");
+    echo "[+] Tabela tb_militares limpa com sucesso.\n\n";
+}
+
+// 2. Busca Recursiva de Fotos (varre pasta_fotos e qualquer subpasta interna)
 $fotosMap = [];
 if (is_dir($fotosDir)) {
-    $arquivos = scandir($fotosDir);
-    foreach ($arquivos as $arq) {
-        if ($arq === '.' || $arq === '..') continue;
-        $caminhoCompleto = $fotosDir . $arq;
-        if (is_file($caminhoCompleto)) {
-            $ext = strtolower(pathinfo($arq, PATHINFO_EXTENSION));
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($fotosDir, RecursiveDirectoryIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::SELF_FIRST
+    );
+
+    foreach ($iterator as $item) {
+        if ($item->isFile()) {
+            $caminhoCompleto = $item->getPathname();
+            $ext = strtolower($item->getExtension());
             if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) continue;
 
-            $nomeSemExt = pathinfo($arq, PATHINFO_FILENAME);
+            $nomeSemExt = pathinfo($item->getFilename(), PATHINFO_FILENAME);
 
-            // 1. Guarda pelo numero puro da identidade (ex: "0123456789.JPG" -> "0123456789")
+            // Mapeia por numeros da identidade
             $apenasNumeros = preg_replace('/\D/', '', $nomeSemExt);
             if (!empty($apenasNumeros)) {
                 $fotosMap[$apenasNumeros] = $caminhoCompleto;
+                // Guarda tambem sem zeros a esquerda se houver
+                $semZeros = ltrim($apenasNumeros, '0');
+                if (!empty($semZeros)) {
+                    $fotosMap[$semZeros] = $caminhoCompleto;
+                }
             }
 
-            // 2. Guarda pelo texto exato sem extensao
+            // Mapeia pelo nome exato em maiusculo
             $nomeLimpo = strtoupper(trim($nomeSemExt));
             $fotosMap[$nomeLimpo] = $caminhoCompleto;
         }
     }
-    echo "[+] Fotos reconhecidas na pasta_fotos: " . count($fotosMap) . " arquivos.\n";
+    echo "[+] Fotos encontradas e mapeadas: " . count($fotosMap) . " entradas.\n";
+    if (count($fotosMap) > 0) {
+        $exemplo = array_slice(array_keys($fotosMap), 0, 3);
+        echo "    Exemplos de chaves de foto: " . implode(', ', $exemplo) . "\n";
+    }
 } else {
-    echo "[!] Aviso: Pasta 'pasta_fotos/' nao encontrada. Importando apenas dados da planilha.\n";
+    echo "[!] Aviso: Pasta 'pasta_fotos' nao encontrada.\n";
 }
+echo "\n";
 
-// 3. Leitura e Deteccao de Delimitador do CSV
+// 3. Leitura e Limpeza do CSV (remove BOM e detecta delimitador)
 $conteudo = file_get_contents($csvFile);
+
+// Remove UTF-8 BOM se presente
+$conteudo = preg_replace('/^\xEF\xBB\xBF/', '', $conteudo);
+
 // Converte de ISO-8859-1 para UTF-8 se necessario
 if (!mb_check_encoding($conteudo, 'UTF-8')) {
     $conteudo = mb_convert_encoding($conteudo, 'UTF-8', 'ISO-8859-1');
@@ -84,12 +108,19 @@ if (!mb_check_encoding($conteudo, 'UTF-8')) {
 $linhas = explode("\n", str_replace(["\r\n", "\r"], "\n", $conteudo));
 $primeiraLinha = trim($linhas[0]);
 
+// Detecta delimitador da primeira linha
+$contTab = substr_count($primeiraLinha, "\t");
+$contPontoVirgula = substr_count($primeiraLinha, ';');
+$contVirgula = substr_count($primeiraLinha, ',');
+
 $delimitador = ';';
-if (substr_count($primeiraLinha, "\t") >= substr_count($primeiraLinha, ';') && substr_count($primeiraLinha, "\t") > 0) {
+if ($contTab > $contPontoVirgula && $contTab > $contVirgula) {
     $delimitador = "\t";
-} elseif (substr_count($primeiraLinha, ',') > substr_count($primeiraLinha, ';')) {
+} elseif ($contVirgula > $contPontoVirgula && $contVirgula > $contTab) {
     $delimitador = ',';
 }
+
+echo "[+] Delimitador detectado: " . ($delimitador === "\t" ? "TAB (Tabulação)" : ($delimitador === ';' ? "Ponto e Vírgula (;)" : "Vírgula (,)")) . "\n";
 
 $handle = fopen('php://memory', 'r+');
 fwrite($handle, $conteudo);
@@ -100,15 +131,14 @@ if (!$cabecalho) {
     die("ERRO: Nao foi possivel ler o cabecalho do CSV.\n");
 }
 
-// Normaliza cabecalho com suporte exato aos campos informados
+// Limpa cada coluna do cabecalho
 $mapaColunas = [];
 $sinonimos = [
     'posto_grad'       => ['pg', 'posto', 'posto/grad', 'posto_grad', 'graduacao', 'posto_graduacao', 'posto/graduação', 'p/g', 'grad'],
-    'subunidade'       => ['subunidade', 'su', 'cia', 'companhia', 'sub_unidade'],
     'numero'           => ['nr', 'numero', 'nº', 'num', 'numero_militar', 'n'],
     'nome_guerra'      => ['nome de guerra', 'nome_guerra', 'nome guerra', 'guerra', 'nome_de_guerra'],
     'nome_completo'    => ['nome completo', 'nome_completo', 'nome', 'militar', 'nome_militar'],
-    'dt_nascimento'    => ['dt nasc', 'dt_nascimento', 'data nascimento', 'nascimento', 'data_nasc', 'dt_nasc', 'data_nascimento'],
+    'dt_nascimento'    => ['dt nasc', 'dt_nasc', 'data nascimento', 'nascimento', 'data_nasc', 'data_nascimento'],
     'dt_praca'         => ['dt praca', 'dt praça', 'dt_praca', 'data praca', 'data praça', 'praca', 'praça', 'dt_incorporacao', 'incorporacao'],
     'idt_militar'      => ['idt mil', 'identidade', 'idt', 'idt militar', 'idt_militar', 'identidade militar', 'rg', 'identidade_militar'],
     'cpf'              => ['cpf', 'cic'],
@@ -118,6 +148,7 @@ $sinonimos = [
     'cep'              => ['cep'],
     'email'            => ['e-mail', 'email', 'e_mail', 'correio_eletronico'],
     'celular_princ'    => ['telefone', 'tel', 'celular', 'celular_princ', 'contato', 'celular_principal'],
+    'subunidade'       => ['subunidade', 'su', 'cia', 'companhia', 'sub_unidade'],
     'pelotao'          => ['pelotao', 'pelotão', 'pel'],
     'secao'            => ['secao', 'seção', 'sec'],
     'qmg'              => ['qmg', 'qualificacao', 'arma'],
@@ -127,9 +158,13 @@ $sinonimos = [
 ];
 
 foreach ($cabecalho as $idx => $colOriginal) {
+    // Remove aspas, acentos e caracteres estranhos para comparar
     $colLimpa = strtolower(trim(preg_replace('/[^a-zA-Z0-9_\/]/', ' ', $colOriginal)));
     $colLimpa = preg_replace('/\s+/', ' ', $colLimpa);
     
+    // Ignora GPT expressamente
+    if ($colLimpa === 'gpt') continue;
+
     foreach ($sinonimos as $campoBanco => $listaSinonimos) {
         if (in_array($colLimpa, $listaSinonimos, true)) {
             $mapaColunas[$campoBanco] = $idx;
@@ -138,15 +173,11 @@ foreach ($cabecalho as $idx => $colOriginal) {
     }
 }
 
-echo "[+] Mapeamento de colunas detectado com sucesso:\n";
+echo "[+] Colunas mapeadas com sucesso:\n";
 foreach ($mapaColunas as $campo => $idx) {
-    echo "    - {$campo} => Coluna: " . ($cabecalho[$idx] ?? $idx) . "\n";
+    echo "    - {$campo} => [Coluna {$idx}] '" . ($cabecalho[$idx] ?? '') . "'\n";
 }
 echo "\n";
-
-if (!isset($mapaColunas['nome_guerra']) && !isset($mapaColunas['nome_completo'])) {
-    die("ERRO: Nao foi encontrada nenhuma coluna de Nome ou Nome de Guerra no CSV.\n");
-}
 
 // Funcao auxiliar para formatar datas (DD/MM/AAAA -> AAAA-MM-DD)
 function formatarDataBanco($valor) {
@@ -182,7 +213,7 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
     $nomeGuerra     = strtoupper($getVal('nome_guerra'));
     $nomeCompleto   = strtoupper($getVal('nome_completo'));
     $numero         = $getVal('numero');
-    $idtMilitar     = preg_replace('/\s+/', '', $getVal('idt_militar'));
+    $idtMilitar     = trim($getVal('idt_militar'));
     $cpf            = preg_replace('/\D/', '', $getVal('cpf'));
     $subunidade     = strtoupper($getVal('subunidade'));
     $pelotao        = strtoupper($getVal('pelotao'));
@@ -207,23 +238,20 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
     if (empty($nomeCompleto) && !empty($nomeGuerra)) {
         $nomeCompleto = $nomeGuerra;
     }
-
     if (empty($postoGrad)) $postoGrad = 'SD EP';
 
-    // 4. Busca da Foto correspondente por Identidade (ex: 0123456789.JPG)
+    // 4. Busca da Foto correspondente
     $fotoPath = null;
-    $idtNumeros = preg_replace('/\D/', '', $idtMilitar);
-    $cpfNumeros = preg_replace('/\D/', '', $cpf);
+    $idtLimpa = preg_replace('/\D/', '', $idtMilitar);
+    $idtSemZero = ltrim($idtLimpa, '0');
 
     $origemFoto = null;
-    if (!empty($idtNumeros) && isset($fotosMap[$idtNumeros])) {
-        $origemFoto = $fotosMap[$idtNumeros];
+    if (!empty($idtLimpa) && isset($fotosMap[$idtLimpa])) {
+        $origemFoto = $fotosMap[$idtLimpa];
+    } elseif (!empty($idtSemZero) && isset($fotosMap[$idtSemZero])) {
+        $origemFoto = $fotosMap[$idtSemZero];
     } elseif (!empty($idtMilitar) && isset($fotosMap[strtoupper($idtMilitar)])) {
         $origemFoto = $fotosMap[strtoupper($idtMilitar)];
-    } elseif (!empty($cpfNumeros) && isset($fotosMap[$cpfNumeros])) {
-        $origemFoto = $fotosMap[$cpfNumeros];
-    } elseif (!empty($nomeGuerra) && isset($fotosMap[$nomeGuerra])) {
-        $origemFoto = $fotosMap[$nomeGuerra];
     }
 
     if ($origemFoto && file_exists($origemFoto)) {
@@ -240,25 +268,25 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
     }
 
     try {
-        // 5. Verifica se o militar ja existe (por IDT, CPF ou Nome+Posto)
+        // 5. Verifica se ja existe por IDENTIDADE ou CPF (apenas se tiver valor valido)
         $militarId = null;
-        if (!empty($idtMilitar)) {
+        if (!empty($idtMilitar) && strlen($idtMilitar) >= 3) {
             $stmt = $db->prepare("SELECT id, foto_path FROM tb_militares WHERE idt_militar = ? LIMIT 1");
             $stmt->execute([$idtMilitar]);
             $res = $stmt->fetch();
-            if ($res) { $militarId = (int)$res['id']; if(!$fotoPath) $fotoPath = $res['foto_path']; }
+            if ($res) {
+                $militarId = (int)$res['id'];
+                if (!$fotoPath) $fotoPath = $res['foto_path'];
+            }
         }
-        if (!$militarId && !empty($cpf)) {
+        if (!$militarId && !empty($cpf) && strlen($cpf) >= 7) {
             $stmt = $db->prepare("SELECT id, foto_path FROM tb_militares WHERE cpf = ? LIMIT 1");
             $stmt->execute([$cpf]);
             $res = $stmt->fetch();
-            if ($res) { $militarId = (int)$res['id']; if(!$fotoPath) $fotoPath = $res['foto_path']; }
-        }
-        if (!$militarId && !empty($nomeGuerra) && !empty($postoGrad) && !empty($subunidade)) {
-            $stmt = $db->prepare("SELECT id, foto_path FROM tb_militares WHERE nome_guerra = ? AND posto_grad = ? AND subunidade = ? LIMIT 1");
-            $stmt->execute([$nomeGuerra, $postoGrad, $subunidade]);
-            $res = $stmt->fetch();
-            if ($res) { $militarId = (int)$res['id']; if(!$fotoPath) $fotoPath = $res['foto_path']; }
+            if ($res) {
+                $militarId = (int)$res['id'];
+                if (!$fotoPath) $fotoPath = $res['foto_path'];
+            }
         }
 
         if ($militarId) {
@@ -268,10 +296,6 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
                 numero = COALESCE(NULLIF(:numero, ''), numero),
                 nome_guerra = COALESCE(NULLIF(:nome_guerra, ''), nome_guerra),
                 nome_completo = COALESCE(NULLIF(:nome_completo, ''), nome_completo),
-                subunidade = COALESCE(NULLIF(:subunidade, ''), subunidade),
-                pelotao = COALESCE(NULLIF(:pelotao, ''), pelotao),
-                secao = COALESCE(NULLIF(:secao, ''), secao),
-                qmg = COALESCE(NULLIF(:qmg, ''), qmg),
                 dt_nascimento = COALESCE(:dt_nascimento, dt_nascimento),
                 dt_praca = COALESCE(:dt_praca, dt_praca),
                 nome_pai = COALESCE(NULLIF(:nome_pai, ''), nome_pai),
@@ -280,9 +304,6 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
                 celular_princ = COALESCE(NULLIF(:celular_princ, ''), celular_princ),
                 endereco = COALESCE(NULLIF(:endereco, ''), endereco),
                 cep = COALESCE(NULLIF(:cep, ''), cep),
-                tipo_sanguineo = COALESCE(NULLIF(:tipo_sanguineo, ''), tipo_sanguineo),
-                cat_cnh = COALESCE(NULLIF(:cat_cnh, ''), cat_cnh),
-                validade_cnh = COALESCE(:validade_cnh, validade_cnh),
                 foto_path = COALESCE(:foto_path, foto_path),
                 status_ativo = 1
             WHERE id = :id";
@@ -293,10 +314,6 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
                 ':numero'         => $numero,
                 ':nome_guerra'    => $nomeGuerra,
                 ':nome_completo'  => $nomeCompleto,
-                ':subunidade'     => $subunidade,
-                ':pelotao'        => $pelotao,
-                ':secao'          => $secao,
-                ':qmg'            => $qmg,
                 ':dt_nascimento'  => $dtNascimento,
                 ':dt_praca'       => $dtPraca,
                 ':nome_pai'       => $nomePai,
@@ -305,24 +322,21 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
                 ':celular_princ'  => $celularPrinc,
                 ':endereco'       => $endereco,
                 ':cep'            => $cep,
-                ':tipo_sanguineo' => $tipoSanguineo,
-                ':cat_cnh'        => $catCnh,
-                ':validade_cnh'   => $validadeCnh,
                 ':foto_path'      => $fotoPath,
                 ':id'             => $militarId
             ]);
             $atualizados++;
-            echo " [ATUALIZADO] {$postoGrad} {$nomeGuerra} (ID {$militarId})" . ($fotoPath ? " [📸 FOTO VINCULADA]" : "") . "\n";
+            echo " [ATUALIZADO] {$postoGrad} {$nomeGuerra} (Idt: {$idtMilitar})" . ($fotoPath ? " [📸 FOTO OK]" : "") . "\n";
         } else {
             // INSERT
             $sql = "INSERT INTO tb_militares (
-                cpf, posto_grad, numero, nome_guerra, subunidade, pelotao, secao, nome_completo,
-                nome_pai, nome_mae, email, qmg, dt_nascimento, tipo_sanguineo, dt_praca, idt_militar,
-                celular_princ, cep, endereco, cat_cnh, validade_cnh, foto_path, status_ativo
+                cpf, posto_grad, numero, nome_guerra, nome_completo,
+                nome_pai, nome_mae, email, dt_nascimento, dt_praca, idt_militar,
+                celular_princ, cep, endereco, foto_path, status_ativo
             ) VALUES (
-                :cpf, :posto_grad, :numero, :nome_guerra, :subunidade, :pelotao, :secao, :nome_completo,
-                :nome_pai, :nome_mae, :email, :qmg, :dt_nascimento, :tipo_sanguineo, :dt_praca, :idt_militar,
-                :celular_princ, :cep, :endereco, :cat_cnh, :validade_cnh, :foto_path, 1
+                :cpf, :posto_grad, :numero, :nome_guerra, :nome_completo,
+                :nome_pai, :nome_mae, :email, :dt_nascimento, :dt_praca, :idt_militar,
+                :celular_princ, :cep, :endereco, :foto_path, 1
             )";
 
             $stmt = $db->prepare($sql);
@@ -331,27 +345,20 @@ while (($dadosLinha = fgetcsv($handle, 0, $delimitador)) !== false) {
                 ':posto_grad'     => $postoGrad,
                 ':numero'         => $numero ?: null,
                 ':nome_guerra'    => $nomeGuerra,
-                ':subunidade'     => $subunidade ?: null,
-                ':pelotao'        => $pelotao ?: null,
-                ':secao'          => $secao ?: null,
                 ':nome_completo'  => $nomeCompleto,
                 ':nome_pai'       => $nomePai ?: null,
                 ':nome_mae'       => $nomeMae ?: null,
                 ':email'          => $email ?: null,
-                ':qmg'            => $qmg ?: null,
                 ':dt_nascimento'  => $dtNascimento,
-                ':tipo_sanguineo' => $tipoSanguineo ?: null,
                 ':dt_praca'       => $dtPraca,
                 ':idt_militar'    => $idtMilitar ?: null,
                 ':celular_princ'  => $celularPrinc ?: null,
                 ':cep'            => $cep ?: null,
                 ':endereco'       => $endereco ?: null,
-                ':cat_cnh'        => $catCnh ?: null,
-                ':validade_cnh'   => $validadeCnh,
                 ':foto_path'      => $fotoPath
             ]);
             $inseridos++;
-            echo " [INSERIDO]   {$postoGrad} {$nomeGuerra}" . ($fotoPath ? " [📸 FOTO VINCULADA]" : "") . "\n";
+            echo " [INSERIDO]   {$postoGrad} {$nomeGuerra} (Idt: {$idtMilitar})" . ($fotoPath ? " [📸 FOTO OK]" : "") . "\n";
         }
     } catch (Exception $e) {
         $erros++;
