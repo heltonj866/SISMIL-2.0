@@ -50,14 +50,18 @@ class UploadService {
             throw new Exception("Conteúdo de arquivo suspeito para '{$file_key}'. MIME detectado: {$mime_real}");
         }
 
+        $dirReal = realpath($dir);
+        if ($dirReal) {
+            $dir = $dirReal;
+        }
         $dir = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR;
 
         if (!is_dir($dir)) {
-            @mkdir($dir, 0775, true);
+            @mkdir($dir, 0777, true);
         }
 
         if (!is_writable($dir)) {
-            throw new Exception("Pasta de destino '{$dir}' sem permissão de escrita para o servidor web.");
+            throw new Exception("A pasta de uploads '{$dir}' está sem permissão de escrita para o Apache.");
         }
 
         $ext_segura = ($ext === 'pdf') ? 'pdf' : 'jpg'; // Normaliza extensões de imagem para jpg
