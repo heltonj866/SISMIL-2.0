@@ -122,11 +122,12 @@ const fmt = (d) => {
   return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d
 }
 
-const fotoUrl = computed(() =>
-  dados.value?.foto_path
-    ? `/sismil/uploads/${dados.value.foto_path}`
-    : '/sismil/assets/sem_foto.png'
-)
+const fotoUrl = computed(() => {
+  const p = dados.value?.foto_path
+  if (!p || p === 'sem_foto.png' || p === 'sem_foto.PNG') return '/sismil/assets/sem_foto.png'
+  if (p.startsWith('http') || p.startsWith('/sismil/')) return p
+  return `/sismil/uploads/${p}`
+})
 const onImgError = (e) => { e.target.src = '/sismil/assets/sem_foto.png' }
 
 const enderecoCompleto = computed(() => {

@@ -423,7 +423,11 @@ const isEdicao = computed(() => !!props.militar?.id)
 const loading = ref(false)
 const dadosCompletos = ref(null) // dados buscados do backend
 
-const fotoAtual = computed(() => dadosCompletos.value?.foto_path || props.militar?.foto_path || null)
+const fotoAtual = computed(() => {
+  const p = dadosCompletos.value?.foto_path || props.militar?.foto_path
+  if (!p || p === 'sem_foto.png' || p === 'sem_foto.PNG') return null
+  return p
+})
 
 // Busca dados completos quando o militar tem ID
 const fetchDadosCompletos = async () => {

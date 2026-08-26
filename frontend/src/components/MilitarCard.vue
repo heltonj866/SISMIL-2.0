@@ -71,11 +71,12 @@ const cnhStatus = computed(() => {
   return 'ok'
 })
 
-const fotoUrl = computed(() =>
-  props.militar?.foto_path
-    ? `/sismil/uploads/${props.militar.foto_path}`
-    : '/sismil/assets/sem_foto.png'
-)
+const fotoUrl = computed(() => {
+  const p = props.militar?.foto_path
+  if (!p || p === 'sem_foto.png' || p === 'sem_foto.PNG') return '/sismil/assets/sem_foto.png'
+  if (p.startsWith('http') || p.startsWith('/sismil/')) return p
+  return `/sismil/uploads/${p}`
+})
 const onImgError = (e) => { e.target.src = '/sismil/assets/sem_foto.png' }
 </script>
 
