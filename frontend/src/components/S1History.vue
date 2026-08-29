@@ -2,7 +2,7 @@
   <div class="s1-history">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h5 class="section-title mb-0">Ficha Disciplinar (Histórico S1)</h5>
-      <button type="button" class="btn-modern btn-primary btn-sm" @click="showForm = true" :disabled="!militarId">
+      <button type="button" class="btn-modern btn-primary btn-sm" @click="novoRegistro" :disabled="!militarId">
         <i class="fas fa-plus"></i> Novo Registro
       </button>
     </div>
@@ -56,7 +56,10 @@
             </td>
             <td>{{ h.documento_ref }}</td>
             <td>
-              <button type="button" class="btn-icon text-danger" @click="excluir(h.id)">
+              <button type="button" class="btn-icon text-primary" @click="editar(h)" title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button type="button" class="btn-icon text-danger" @click="excluir(h.id)" title="Excluir">
                 <i class="fas fa-trash"></i>
               </button>
             </td>
@@ -70,7 +73,7 @@
 
     <!-- Form -->
     <div v-if="showForm" class="glass-panel p-3 form-new">
-      <h6 class="mb-3">Nova Alteração</h6>
+      <h6 class="mb-3">{{ form.id ? 'Editar Registro' : 'Nova Alteração' }}</h6>
       <div class="form-grid basic-grid">
         <div class="input-group">
           <label>Categoria</label>
@@ -101,15 +104,15 @@
           <label>Descrição Detalhada</label>
           <textarea v-model="form.desc" class="input-modern" rows="2"></textarea>
         </div>
-        <div class="input-group full-width">
+        <div class="input-group full-width" v-if="!form.id">
           <label>Anexo (Opcional)</label>
           <input type="file" @change="handleFile" class="input-modern">
         </div>
       </div>
       <div class="d-flex justify-content-end mt-3 gap-2">
-        <button type="button" class="btn-modern btn-secondary-outline btn-sm" @click="showForm = false">Cancelar</button>
+        <button type="button" class="btn-modern btn-secondary-outline btn-sm" @click="cancelar">Cancelar</button>
         <button type="button" class="btn-modern btn-success btn-sm" @click="salvar" :disabled="loading">
-          {{ loading ? 'Salvando...' : 'Registrar Alteração' }}
+          {{ loading ? 'Salvando...' : (form.id ? 'Salvar Alterações' : 'Registrar Alteração') }}
         </button>
       </div>
     </div>
@@ -121,7 +124,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useToast, useConfirm } from '../composables/useToast'
 import { MilitarService } from '@/services/MilitarService'
 
-const { warning: toastWarning, error: toastError } = useToast()
+const { warning: toastWarning, error: toastError, success: toastSuccess } = useToast()
 const { ask: confirmDialog } = useConfirm()
 
 const props = defineProps({ militarId: [Number, String] })
@@ -157,7 +160,8 @@ const totalDiasPrisao = computed(() => {
   }, 0)
 })
 
-const form = ref({ cat: 'DISCIPLINA', tipo: '', data: '', dias: 0, doc: '', desc: '' })
+const formVazio = () => ({ id: null, cat: 'DISCIPLINA', tipo: '', data: '', dias: 0, doc: '', desc: '' })
+const form = ref(formVazio())
 const file = ref(null)
 
 const handleFile = (e) => { if(e.target.files.length) file.value = e.target.files[0] }
@@ -177,6 +181,31 @@ const fetchHistorico = async () => {
   } catch(e) { console.error(e) }
 }
 
+const novoRegistro = () => {
+  form.value = formVazio()
+  file.value = null
+  showForm.value = true
+}
+
+const editar = (h) => {
+  form.value = {
+    id: h.id,
+    cat: h.categoria || 'DISCIPLINA',
+    tipo: h.tipo_detalhe || '',
+    data: h.data_fato || '',
+    dias: h.qtd_dias || 0,
+    doc: h.documento_ref || '',
+    desc: h.descricao || ''
+  }
+  showForm.value = true
+}
+
+const cancelar = () => {
+  form.value = formVazio()
+  file.value = null
+  showForm.value = false
+}
+
 const salvar = async () => {
   if(!form.value.tipo || !form.value.data) { toastWarning('Tipo e data são obrigatórios'); return }
   loading.value = true
@@ -188,14 +217,14 @@ const salvar = async () => {
   fd.append('s1_dias', form.value.dias)
   fd.append('s1_doc', form.value.doc)
   fd.append('s1_desc', form.value.desc)
+  if(form.value.id) fd.append('s1_id', form.value.id)
   if(file.value) fd.append('s1_file', file.value)
 
   try {
     const json = await MilitarService.saveHistorico(fd)
-    if(json.status === 'sucesso' || json.msg?.includes('sucesso')) {
-      showForm.value = false
-      form.value = { cat: 'DISCIPLINA', tipo: '', data: '', dias: 0, doc: '', desc: '' }
-      file.value = null
+    if(json.status === 'sucesso') {
+      toastSuccess(form.value.id ? 'Registro atualizado!' : 'Registro adicionado!')
+      cancelar()
       fetchHistorico()
     } else { toastError('Erro: ' + (json.msg || 'Erro desconhecido')) }
   } catch(e) { toastError('Erro de conexão.') }

@@ -99,8 +99,15 @@ class MilitarService {
         );
         $parametros[':pdf_cnh'] = $pdf_cnh ?? ($militarExistente['pdf_habilitacao'] ?? null);
         
-        // A ficha de nada consta não entra na edição comum (salvarMilitar), mas garantimos que não apague
-        $parametros[':pdf_nada_consta'] = $militarExistente['pdf_nada_consta'] ?? null;
+        // Upload da Ficha de Nada Consta (permitido também na edição normal)
+        $pdf_nada_consta = $this->uploadService->validarEProcessarUpload(
+            'pdf_nada_consta',
+            ['pdf'],
+            ['application/pdf'],
+            $dir_uploads,
+            'nada_consta_'
+        );
+        $parametros[':pdf_nada_consta'] = $pdf_nada_consta ?? ($militarExistente['pdf_nada_consta'] ?? null);
 
         if ($id > 0) {
             $parametros[':id'] = $id;

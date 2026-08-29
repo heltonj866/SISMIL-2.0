@@ -531,6 +531,8 @@ const form = ref({
 })
 
 const fileUploads = ref({ foto: null, nada_consta: null, pdf_habilitacao: null })
+const fotoPreviewUrl = ref(null)
+
 const comprimirImagem = (file, maxDim = 1000, quality = 0.88) => {
   return new Promise((resolve) => {
     if (!file || !file.type.startsWith('image/')) return resolve(file)
@@ -666,7 +668,7 @@ const handleSave = async () => {
   if (fileUploads.value.pdf_habilitacao) fd.append('pdf_cnh', fileUploads.value.pdf_habilitacao)
   try {
     const json = await MilitarService.save(fd)
-    if (json.status === 'sucesso' || json.id) {
+    if (json.status === 'sucesso') {
       toastSuccess('Registro salvo com sucesso!')
       emit('saved')
     }

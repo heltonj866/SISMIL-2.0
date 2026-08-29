@@ -18,7 +18,7 @@ class AlteracaoRepository {
     }
 
     public function save(array $data, ?string $arquivoPath = null): void {
-        $id = (int)($data['id'] ?? 0);
+        $id = (int)($data['s1_id'] ?? $data['id'] ?? 0);
         $militarId   = (int)($data['s1_militar_id'] ?? 0);
         $categoria   = $data['s1_cat'] ?? '';
         $tipoDetalhe = $data['s1_tipo'] ?? '';

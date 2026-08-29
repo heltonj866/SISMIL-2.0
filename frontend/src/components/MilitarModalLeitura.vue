@@ -88,9 +88,9 @@
           <div v-if="loadingHistorico" class="text-muted text-center py-2">Carregando histórico...</div>
           <div class="historico-container" v-else-if="historico.length">
             <div v-for="h in historico" :key="h.id" class="historico-item">
-              <div class="h-data">{{ fmt(h.data_registro) }}</div>
+              <div class="h-data">{{ fmt(h.data_fato) }}</div>
               <div class="h-desc">{{ h.descricao }}</div>
-              <div class="h-resp text-muted small">Por: {{ h.responsavel_nome }}</div>
+              <div class="h-resp text-muted small">Por: {{ h.registrado_por || h.responsavel_nome || '---' }}</div>
             </div>
           </div>
           <p class="text-muted small" v-else>Nenhum histórico registrado.</p>
