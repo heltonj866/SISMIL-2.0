@@ -391,6 +391,10 @@ const props = defineProps({
   }
 })
 
+const authStore = useAuthStore()
+const canEdit = computed(() => authStore.canEdit)
+const canDelete = computed(() => authStore.canDelete)
+
 const isReadonly = computed(() => props.readonlyAll || props.modoS2 || !canEdit.value)
 const emit = defineEmits(['cancel', 'saved'])
 
