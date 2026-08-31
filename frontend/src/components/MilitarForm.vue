@@ -218,21 +218,22 @@
           <div class="form-grid basic-grid">
             <div class="input-group">
               <label>Categoria CNH</label>
-              <select v-model="form.cat_cnh" class="input-modern" :disabled="modoS2">
-                <option value="">Nenhuma</option>
+              <select v-model="form.cat_cnh" class="input-modern" :disabled="isReadonly">
+                <option value="">Nenhuma / Sem CNH</option>
                 <option value="A">A (Moto)</option>
                 <option value="B">B (Carro)</option>
                 <option value="AB">AB (Moto/Carro)</option>
                 <option value="C">C (Caminhão)</option>
                 <option value="D">D (Ônibus)</option>
                 <option value="E">E (Carreta)</option>
+                <option value="AC">AC</option>
                 <option value="AD">AD</option>
                 <option value="AE">AE</option>
               </select>
             </div>
             <div class="input-group">
               <label>Validade CNH</label>
-              <input type="date" v-model="form.validade_cnh" class="input-modern" :disabled="isReadonly">
+              <input type="date" v-model="form.validade_cnh" class="input-modern" :disabled="isReadonly || !form.cat_cnh">
             </div>
             <!-- CNH PDF: upload para admin/sargenteacao, visualização para S2 -->
             <div class="input-group full-width">
@@ -390,7 +391,7 @@ const props = defineProps({
   }
 })
 
-const isReadonly = computed(() => props.readonlyAll || props.modoS2)
+const isReadonly = computed(() => props.readonlyAll || props.modoS2 || !canEdit.value)
 const emit = defineEmits(['cancel', 'saved'])
 
 // ─── Detecção de alterações não salvas ───────────────────────────────────────
@@ -415,13 +416,16 @@ const onBeforeUnloadHandler = (e) => {
 onMounted(() => window.addEventListener('beforeunload', onBeforeUnloadHandler))
 onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnloadHandler))
 
-const authStore = useAuthStore()
-const canEdit = computed(() => authStore.canEdit)
-const canDelete = computed(() => authStore.canDelete)
-
 const isEdicao = computed(() => !!props.militar?.id)
 const loading = ref(false)
 const dadosCompletos = ref(null) // dados buscados do backend
+
+watch(() => form.value.cat_cnh, (novaCat) => {
+  if (!novaCat) {
+    form.value.validade_cnh = ''
+    fileUploads.value.pdf_habilitacao = null
+  }
+})
 
 const fotoAtual = computed(() => {
   const p = dadosCompletos.value?.foto_path || props.militar?.foto_path
