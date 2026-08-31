@@ -41,7 +41,7 @@
       <table class="table-modern">
         <thead>
           <tr>
-            <th>Data</th><th>Categoria</th><th>Evento</th><th>Descrição</th><th>Doc. Ref</th><th>Ações</th>
+            <th>Data</th><th>Categoria</th><th>Evento</th><th>Descrição</th><th>Doc. Ref</th><th class="text-end">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -55,13 +55,15 @@
               {{ h.descricao }}
             </td>
             <td>{{ h.documento_ref }}</td>
-            <td>
-              <button type="button" class="btn-icon text-primary" @click="editar(h)" title="Editar">
-                <i class="fas fa-edit"></i>
-              </button>
-              <button type="button" class="btn-icon text-danger" @click="excluir(h.id)" title="Excluir">
-                <i class="fas fa-trash"></i>
-              </button>
+            <td class="text-end">
+              <div class="action-buttons">
+                <button type="button" class="btn-action btn-action-edit" @click="editar(h)" title="Editar registro">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button type="button" class="btn-action btn-action-delete" @click="excluir(h.id)" title="Excluir registro">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
             </td>
           </tr>
           <tr v-if="historico.length === 0">
@@ -265,6 +267,15 @@ watch(() => props.militarId, fetchHistorico)
 .justify-content-between { justify-content: space-between; }
 .align-items-center { align-items: center; }
 .justify-content-end { justify-content: flex-end; }
+.text-end { text-align: right; }
+
+.action-buttons { display: inline-flex; align-items: center; gap: 0.45rem; justify-content: flex-end; }
+.btn-action { width: 32px; height: 32px; border-radius: 6px; border: 1px solid transparent; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease; }
+.btn-action-edit { color: var(--primary-blue, #0d6efd); background: #e0edff; }
+.btn-action-edit:hover { background: var(--primary-blue, #0d6efd); color: #fff; transform: translateY(-1px); box-shadow: 0 2px 5px rgba(13, 110, 253, 0.25); }
+.btn-action-delete { color: #dc3545; background: #fee2e2; }
+.btn-action-delete:hover { background: #dc3545; color: #fff; transform: translateY(-1px); box-shadow: 0 2px 5px rgba(220, 53, 69, 0.25); }
+
 .btn-icon { background: none; border: none; cursor: pointer; opacity: 0.7; transition: opacity 0.2s; }
 .btn-icon:hover { opacity: 1; }
 
