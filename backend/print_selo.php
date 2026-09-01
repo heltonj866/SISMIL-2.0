@@ -27,22 +27,29 @@ try {
         die("<div style='text-align:center; padding:50px;'><h1>🚫 VEÍCULO NÃO HOMOLOGADO 🚫</h1></div>");
     }
 
-    // Lógica de Cores por posto
-    $cor_tema = '#000'; 
-    $posto = $m['posto_grad'];
+    // Lógica de Cores por posto/graduação
+    $posto = trim($m['posto_grad'] ?? '');
     
-    $oficiais = ['Gen', 'Cel', 'Ten Cel', 'Maj', 'Cap', '1º Ten', '2º Ten', 'Asp'];
-    $graduados = ['Sub Ten', '1º Sgt', '2º Sgt', '3º Sgt'];
+    // Mapeamento idêntico ao MilitarForm.vue + sinônimos de segurança
+    $oficiais  = ['Gen', 'Gen Ex', 'Gen Div', 'Gen Bda', 'Cel', 'TC', 'Ten Cel', 'Maj', 'Cap', '1º Ten', '1 Ten', '2º Ten', '2 Ten', 'Asp'];
+    $graduados = ['S Ten', 'Sub Ten', 'Subten', '1º Sgt', '1 Sgt', '2º Sgt', '2 Sgt', '3º Sgt', '3 Sgt'];
+    $civis     = ['SC', 'Civ', 'Civil', 'Servidor Civil'];
     
-    if (in_array($posto, $oficiais)) $cor_tema = '#b30000'; // Vermelho
-    elseif (in_array($posto, $graduados)) $cor_tema = '#0033cc'; // Azul
-    else $cor_tema = '#006600'; // Verde
+    if (in_array($posto, $oficiais)) {
+        $cor_tema = '#b30000'; // Vermelho (Oficiais)
+    } elseif (in_array($posto, $graduados)) {
+        $cor_tema = '#0033cc'; // Azul (Subtenentes e Sargentos)
+    } elseif (in_array($posto, $civis)) {
+        $cor_tema = '#e5a000'; // Amarelo (Servidores Civis)
+    } else {
+        $cor_tema = '#006600'; // Verde (Cabos, Soldados e Alunos)
+    }
 
     // Lógica da Validade: Emissão do CRLV + 1 Ano
     $campo_data = !empty($m['emissao_crlv']) ? $m['emissao_crlv'] : ($m['validade_crlv'] ?? null);
     if (!empty($campo_data)) {
         $nova_data = strtotime('+1 year', strtotime($campo_data));
-        $meses = [1=>'JANEIRO', 2=>'FEVEREIRO', 3=>'MARÇO', 4=>'ABRIL', 5=>'MAIO', 6=>'JUNHO', 7=>'JULHO', 8=>'AGOSTO', 9=>'SETEMBRO', 10=>'OUTUBRO', 11=>'NOVEBRO', 12=>'DEZEMBRO'];
+        $meses = [1=>'JANEIRO', 2=>'FEVEREIRO', 3=>'MARÇO', 4=>'ABRIL', 5=>'MAIO', 6=>'JUNHO', 7=>'JULHO', 8=>'AGOSTO', 9=>'SETEMBRO', 10=>'OUTUBRO', 11=>'NOVEMBRO', 12=>'DEZEMBRO'];
         $dia = date('d', $nova_data);
         $mes = $meses[(int)date('m', $nova_data)];
         $ano = date('Y', $nova_data);
