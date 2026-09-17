@@ -201,10 +201,9 @@ const handleSubmit = async () => {
 .public-arr-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  display: flex; justify-content: center; padding: 2rem 1rem 4rem;
-  position: relative;
+  display: flex; flex-direction: column; align-items: center; padding: 1.5rem;
 }
-.main-box { width: 100%; max-width: 650px; padding: 2.5rem; }
+.main-box { width: 100%; max-width: 650px; padding: 2.5rem; margin: auto; }
 .logo { width: 90px; }
 .text-primary { color: var(--primary-blue); font-weight: 800; margin-bottom: 0.25rem; }
 .text-center { text-align: center; }
@@ -252,10 +251,8 @@ const handleSubmit = async () => {
 }
 
 .page-footer {
-  position: absolute;
-  bottom: 1.2rem;
-  left: 0;
-  right: 0;
+  margin-top: auto;
+  padding-top: 1rem;
   text-align: center;
   font-size: 0.8rem;
   color: #64748b;

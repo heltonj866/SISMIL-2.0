@@ -109,11 +109,10 @@ const goToArranchamento = () => {
 .login-container {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
   background: linear-gradient(135deg, var(--secondary-blue) 0%, #c4d7e6 100%);
-  padding: 2rem 2rem 4rem 2rem;
-  position: relative;
+  padding: 1.5rem;
 }
 
 .login-card {
@@ -121,7 +120,7 @@ const goToArranchamento = () => {
   max-width: 400px;
   padding: 2.5rem;
   text-align: center;
-  position: relative;
+  margin: auto; /* Centraliza perfeitamente no espaço vazio */
   z-index: 10;
 }
 
@@ -193,10 +192,8 @@ const goToArranchamento = () => {
 }
 
 .login-footer {
-  position: absolute;
-  bottom: 1.2rem;
-  left: 0;
-  right: 0;
+  margin-top: auto;
+  padding-top: 1rem;
   font-size: 0.8rem;
   color: #64748b;
   text-align: center;
