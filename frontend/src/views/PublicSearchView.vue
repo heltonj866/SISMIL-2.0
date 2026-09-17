@@ -75,20 +75,27 @@
               </ul>
             </div>
 
-            <!-- Veículo -->
+            <!-- Veículo(s) -->
             <div class="veiculo-area">
-              <div v-if="!d.veiculo" class="no-vehicle">
+              <div v-if="!d.veiculos || d.veiculos.length === 0" class="no-vehicle">
                 <i class="fas fa-car-crash"></i><br>SEM VEÍCULO
               </div>
-              <div v-else class="vehicle-card" :class="d.veiculo.homologado == 1 ? 'v-ok' : 'v-pending'">
-                <div class="v-modelo">{{ d.veiculo.modelo }}</div>
-                <div class="v-cor text-muted">{{ d.veiculo.cor }}</div>
-                <div class="v-placa">{{ d.veiculo.placa }}</div>
-                <div class="v-status">
-                  <i :class="d.veiculo.homologado == 1 ? 'fas fa-check-circle' : 'fas fa-clock'"></i>
-                  {{ d.veiculo.homologado == 1 ? 'LIBERADO' : 'PENDENTE' }}
+              <template v-else>
+                <div
+                  v-for="(v, idx) in d.veiculos"
+                  :key="idx"
+                  class="vehicle-card"
+                  :class="v.homologado == 1 ? 'v-ok' : 'v-pending'"
+                >
+                  <div class="v-modelo">{{ v.modelo }}</div>
+                  <div class="v-cor text-muted">{{ v.cor }}</div>
+                  <div class="v-placa">{{ v.placa }}</div>
+                  <div class="v-status">
+                    <i :class="v.homologado == 1 ? 'fas fa-check-circle' : 'fas fa-clock'"></i>
+                    {{ v.homologado == 1 ? 'LIBERADO' : 'PENDENTE' }}
+                  </div>
                 </div>
-              </div>
+              </template>
             </div>
           </div>
         </div>

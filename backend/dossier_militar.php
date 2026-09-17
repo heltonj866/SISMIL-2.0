@@ -146,7 +146,35 @@ function dataBR($data) {
             <?php if($v['pdf_veiculo']): ?> <li>CRLV - Placa <?php echo h(strtoupper($v['placa'])); ?></li> <?php endif; ?>
             <?php if(!empty($v['pdf_comprovante_vinculo'])): ?> <li>Doc. Comprobatório de Vínculo (Proprietário) - Placa <?php echo h(strtoupper($v['placa'])); ?></li> <?php endif; ?>
         <?php endforeach; ?>
-        <?php if(empty($m['pdf_habilitacao']) && empty($m['pdf_nada_consta']) && count($veiculos) == 0): ?> <li style="color:#666; font-style:italic;">Nenhum documento PDF anexado.</li> <?php endif; ?>
+        <?php
+            // Documentos anexados ao Histórico S1
+            foreach($historico as $h):
+                if(!empty($h['arquivo_path'])):
+        ?>
+            <li>
+                Documento de Histórico S1 — 
+                <strong><?php echo h(strtoupper($h['categoria'] . ' / ' . $h['tipo_detalhe'])); ?></strong>
+                (<?php echo h(dataBR($h['data_fato'])); ?>)
+                <?php if(!empty($h['documento_ref'])): ?> — Ref: <?php echo h($h['documento_ref']); ?> <?php endif; ?>
+            </li>
+        <?php
+                endif;
+            endforeach;
+        ?>
+        <?php
+            $temAlgumDoc = $m['pdf_habilitacao'] || $m['pdf_nada_consta'];
+            if (!$temAlgumDoc) {
+                foreach ($veiculos as $v) {
+                    if ($v['pdf_veiculo'] || $v['pdf_comprovante_vinculo']) { $temAlgumDoc = true; break; }
+                }
+            }
+            if (!$temAlgumDoc) {
+                foreach ($historico as $h) {
+                    if (!empty($h['arquivo_path'])) { $temAlgumDoc = true; break; }
+                }
+            }
+        ?>
+        <?php if(!$temAlgumDoc): ?> <li style="color:#666; font-style:italic;">Nenhum documento PDF anexado.</li> <?php endif; ?>
     </ul>
 
     <div class="section-title">4. Veículos Cadastrados e Trânsito</div>

@@ -64,10 +64,12 @@ class MilitarRepository {
         $militares = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($militares as &$m) {
-            $sv = $this->db->prepare("SELECT placa, modelo, cor, homologado FROM tb_veiculos WHERE militar_id = ? ORDER BY homologado DESC, id DESC LIMIT 1");
+            $sv = $this->db->prepare("SELECT placa, modelo, cor, homologado FROM tb_veiculos WHERE militar_id = ? ORDER BY homologado DESC, id ASC");
             $sv->execute([$m['id']]);
-            $v = $sv->fetch(PDO::FETCH_ASSOC);
-            $m['veiculo'] = $v ?: null;
+            $veiculos = $sv->fetchAll(PDO::FETCH_ASSOC);
+            // Mantém compatibilidade: 'veiculo' = primeiro veículo (ou null), 'veiculos' = todos
+            $m['veiculo']   = !empty($veiculos) ? $veiculos[0] : null;
+            $m['veiculos']  = $veiculos;
         }
         
         return $militares;
