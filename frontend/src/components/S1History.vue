@@ -41,7 +41,7 @@
       <table class="table-modern">
         <thead>
           <tr>
-            <th>Data</th><th>Categoria</th><th>Evento</th><th>Descrição</th><th>Doc. Ref</th><th class="text-end">Ações</th>
+            <th>Data</th><th>Categoria</th><th>Evento</th><th>Descrição</th><th>Doc. Ref</th><th>Anexo</th><th class="text-end">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -55,6 +55,18 @@
               {{ h.descricao }}
             </td>
             <td>{{ h.documento_ref }}</td>
+            <td>
+              <a
+                v-if="h.arquivo_path"
+                :href="`/sismil/uploads/${h.arquivo_path}`"
+                target="_blank"
+                class="btn-anexo"
+                title="Visualizar documento anexado"
+              >
+                <i class="fas fa-file-pdf"></i> Ver
+              </a>
+              <span v-else class="text-muted" style="font-size:0.78rem;">—</span>
+            </td>
             <td class="text-end">
               <div class="action-buttons">
                 <button type="button" class="btn-action btn-action-edit" @click="editar(h)" title="Editar registro">
@@ -67,7 +79,7 @@
             </td>
           </tr>
           <tr v-if="historico.length === 0">
-            <td colspan="6" class="text-center text-muted py-3">Nenhum registro encontrado.</td>
+            <td colspan="7" class="text-center text-muted py-3">Nenhum registro encontrado.</td>
           </tr>
         </tbody>
       </table>
@@ -106,9 +118,18 @@
           <label>Descrição Detalhada</label>
           <textarea v-model="form.desc" class="input-modern" rows="2"></textarea>
         </div>
-        <div class="input-group full-width" v-if="!form.id">
-          <label>Anexo (Opcional)</label>
-          <input type="file" @change="handleFile" class="input-modern">
+        <div class="input-group full-width">
+          <label>Anexo (PDF)</label>
+          <!-- Link do arquivo atual ao editar -->
+          <div v-if="form.id && form.arquivo_path_atual" class="anexo-atual">
+            <a :href="`/sismil/uploads/${form.arquivo_path_atual}`" target="_blank" class="btn-anexo">
+              <i class="fas fa-file-pdf"></i> Ver documento atual
+            </a>
+            <span class="text-muted" style="font-size:0.8rem; margin-left:0.5rem;">
+              (envie um novo arquivo abaixo para substituir)
+            </span>
+          </div>
+          <input type="file" @change="handleFile" class="input-modern" accept="application/pdf">
         </div>
       </div>
       <div class="d-flex justify-content-end mt-3 gap-2">
@@ -162,7 +183,7 @@ const totalDiasPrisao = computed(() => {
   }, 0)
 })
 
-const formVazio = () => ({ id: null, cat: 'DISCIPLINA', tipo: '', data: '', dias: 0, doc: '', desc: '' })
+const formVazio = () => ({ id: null, cat: 'DISCIPLINA', tipo: '', data: '', dias: 0, doc: '', desc: '', arquivo_path_atual: '' })
 const form = ref(formVazio())
 const file = ref(null)
 
@@ -197,8 +218,10 @@ const editar = (h) => {
     data: h.data_fato || '',
     dias: h.qtd_dias || 0,
     doc: h.documento_ref || '',
-    desc: h.descricao || ''
+    desc: h.descricao || '',
+    arquivo_path_atual: h.arquivo_path || ''
   }
+  file.value = null
   showForm.value = true
 }
 
@@ -296,5 +319,34 @@ watch(() => props.militarId, fetchHistorico)
 
 @media (max-width: 768px) {
   .summary-cards { grid-template-columns: 1fr; }
+}
+
+.btn-anexo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #dc3545;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 5px;
+  padding: 0.2rem 0.55rem;
+  text-decoration: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn-anexo:hover {
+  background: #dc3545;
+  color: #fff;
+  border-color: #dc3545;
+}
+
+.anexo-atual {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
 </style>
