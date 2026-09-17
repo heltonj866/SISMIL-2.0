@@ -35,6 +35,11 @@
           <i class="fas fa-sign-out-alt"></i> Sair
         </button>
       </div>
+
+      <div class="sidebar-footer">
+        <span>Desenvolvido por <strong>Helton</strong></span>
+        <span>© 2026 SISMIL</span>
+      </div>
     </nav>
     <main class="main-content">
       <router-view v-slot="{ Component }">
@@ -149,6 +154,23 @@ const handleLogout = () => {
 .btn-logout:hover {
   background: var(--danger);
   color: white;
+}
+
+.sidebar-footer {
+  padding: 0.9rem 1.5rem;
+  border-top: 1px solid #e9ecef;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  font-size: 0.72rem;
+  color: #adb5bd;
+  text-align: center;
+  line-height: 1.4;
+}
+.sidebar-footer strong {
+  color: var(--primary-blue);
+  font-weight: 700;
 }
 
 .main-content {
