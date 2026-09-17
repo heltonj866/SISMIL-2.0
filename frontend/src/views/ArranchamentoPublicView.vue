@@ -257,11 +257,12 @@ const handleSubmit = async () => {
   left: 0;
   right: 0;
   text-align: center;
-  font-size: 0.75rem;
-  color: #9ca3af;
+  font-size: 0.8rem;
+  color: #64748b;
+  z-index: 5;
 }
 .page-footer strong {
-  color: var(--primary-blue);
+  color: #334155;
   font-weight: 700;
 }
 </style>

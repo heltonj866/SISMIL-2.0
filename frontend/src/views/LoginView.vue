@@ -112,7 +112,7 @@ const goToArranchamento = () => {
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, var(--secondary-blue) 0%, #c4d7e6 100%);
-  padding: 2rem;
+  padding: 2rem 2rem 4rem 2rem;
   position: relative;
 }
 
@@ -121,6 +121,8 @@ const goToArranchamento = () => {
   max-width: 400px;
   padding: 2.5rem;
   text-align: center;
+  position: relative;
+  z-index: 10;
 }
 
 .logo {
@@ -183,7 +185,7 @@ const goToArranchamento = () => {
 
 @media (max-width: 480px) {
   .login-container {
-    padding: 1rem;
+    padding: 1rem 1rem 4rem 1rem;
   }
   .login-card {
     padding: 1.5rem 1rem;
@@ -195,12 +197,13 @@ const goToArranchamento = () => {
   bottom: 1.2rem;
   left: 0;
   right: 0;
-  font-size: 0.75rem;
-  color: rgba(255,255,255,0.65);
+  font-size: 0.8rem;
+  color: #64748b;
   text-align: center;
+  z-index: 5;
 }
 .login-footer strong {
-  color: rgba(255,255,255,0.9);
+  color: #334155;
   font-weight: 700;
 }
 </style>
