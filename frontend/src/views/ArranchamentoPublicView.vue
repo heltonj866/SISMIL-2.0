@@ -201,7 +201,8 @@ const handleSubmit = async () => {
 .public-arr-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  display: flex; justify-content: center; padding: 2rem 1rem;
+  display: flex; justify-content: center; padding: 2rem 1rem 4rem;
+  position: relative;
 }
 .main-box { width: 100%; max-width: 650px; padding: 2.5rem; }
 .logo { width: 90px; }
@@ -251,8 +252,11 @@ const handleSubmit = async () => {
 }
 
 .page-footer {
+  position: absolute;
+  bottom: 1.2rem;
+  left: 0;
+  right: 0;
   text-align: center;
-  padding: 1.5rem 0 2rem;
   font-size: 0.75rem;
   color: #9ca3af;
 }
