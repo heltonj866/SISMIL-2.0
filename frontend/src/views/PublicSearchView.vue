@@ -101,6 +101,9 @@
         </div>
       </div>
     </div>
+    <footer class="page-footer">
+      Desenvolvido por <strong>Helton</strong> &nbsp;·&nbsp; © 2026 SISMIL
+    </footer>
   </div>
 </template>
 
@@ -279,5 +282,16 @@ const handleSearch = async () => {
   .btn-back {
     text-align: center;
   }
+}
+
+.page-footer {
+  text-align: center;
+  padding: 1.5rem 0 2rem;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+.page-footer strong {
+  color: var(--primary-blue);
+  font-weight: 700;
 }
 </style>

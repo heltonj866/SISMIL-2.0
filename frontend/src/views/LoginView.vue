@@ -46,6 +46,9 @@
         </button>
       </form>
     </div>
+    <footer class="login-footer">
+      Desenvolvido por <strong>Helton</strong> &nbsp;·&nbsp; © 2026 SISMIL
+    </footer>
   </div>
 </template>
 
@@ -184,5 +187,16 @@ const goToArranchamento = () => {
   .login-card {
     padding: 1.5rem 1rem;
   }
+}
+
+.login-footer {
+  margin-top: 1.5rem;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.65);
+  text-align: center;
+}
+.login-footer strong {
+  color: rgba(255,255,255,0.9);
+  font-weight: 700;
 }
 </style>
