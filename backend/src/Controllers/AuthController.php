@@ -25,15 +25,16 @@ class AuthController {
 
         try {
             $pdo = Database::getInstance();
+            $usernameClean = preg_replace('/\D/', '', $username);
             $stmt = $pdo->prepare("
                 SELECT u.id, u.identidade as username, u.senha_hash as password_hash, u.role, 
                        u.militar_id, COALESCE(m.nome_guerra, u.nome) as nome_guerra, 
                        COALESCE(m.subunidade, u.subunidade) as subunidade
                 FROM tb_usuarios u
                 LEFT JOIN tb_militares m ON u.militar_id = m.id
-                WHERE u.identidade = ? AND u.ativo = 1
+                WHERE (u.identidade = :u1 OR REPLACE(REPLACE(u.identidade, '.', ''), '-', '') = :u2) AND u.ativo = 1
             ");
-            $stmt->execute([$username]);
+            $stmt->execute([':u1' => $username, ':u2' => $usernameClean ?: $username]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($user && password_verify($password, $user['password_hash'])) {

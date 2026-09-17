@@ -65,8 +65,10 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const mascaraCPF = (e) => {
-  let v = e.target.value.replace(/\D/g, "").substring(0, 11)
-  v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
+  let v = e.target.value.replace(/\D/g, '').substring(0, 11)
+  v = v.replace(/(\d{3})(\d)/, '$1.$2')
+  v = v.replace(/(\d{3})(\d)/, '$1.$2')
+  v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2')
   cpf.value = v
 }
 

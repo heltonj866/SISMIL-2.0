@@ -31,6 +31,12 @@ class UserController {
         $pass = trim($dados['new_user_pass'] ?? '');
         $role = trim($dados['new_user_role'] ?? '');
         
+        // Se for um CPF numérico de 11 dígitos, formata para o padrão 000.000.000-00
+        $cpfClean = preg_replace('/\D/', '', $idt);
+        if (strlen($cpfClean) === 11) {
+            $idt = vsprintf('%s%s%s.%s%s%s.%s%s%s-%s%s', str_split($cpfClean));
+        }
+
         $militarId = !empty($dados['militar_id']) ? (int)$dados['militar_id'] : null;
         
         // Se não houver militar vinculado, pega os dados manuais
@@ -48,10 +54,10 @@ class UserController {
 
         try {
             $pdo = Database::getInstance();
-            $stmt = $pdo->prepare("SELECT id FROM tb_usuarios WHERE identidade = ?");
-            $stmt->execute([$idt]);
+            $stmt = $pdo->prepare("SELECT id FROM tb_usuarios WHERE identidade = ? OR REPLACE(REPLACE(identidade, '.', ''), '-', '') = ?");
+            $stmt->execute([$idt, $cpfClean ?: $idt]);
             if ($stmt->fetch()) {
-                Response::error('Login já existe.', 409);
+                Response::error('Este CPF já está cadastrado para outro usuário.', 409);
             }
 
             $hash = password_hash($pass, PASSWORD_DEFAULT);

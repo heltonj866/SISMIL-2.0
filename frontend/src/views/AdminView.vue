@@ -24,7 +24,7 @@
           <thead>
             <tr>
               <th>ID</th>
-              <th>Login (CPF / Identidade)</th>
+              <th>CPF</th>
               <th>Nível de Acesso</th>
               <th>Status</th>
               <th>Ações</th>
@@ -76,17 +76,17 @@
               <select v-model="form.militar_id" class="input-modern">
                 <option value="">Não vincular (Usuário Genérico/Civil)</option>
                 <option v-for="m in militaresList" :key="m.id" :value="m.id">
-                  {{ m.posto_grad }} {{ m.nome_guerra }} (IDT: {{ m.idt_militar }})
+                  {{ m.posto_grad }} {{ m.nome_guerra }} (CPF: {{ m.cpf || m.idt_militar }})
                 </option>
               </select>
               <small class="text-muted">Se vinculado, Nome, Posto e Cia serão puxados automaticamente.</small>
             </div>
 
             <div class="field">
-              <label>Login (CPF / Identidade)</label>
+              <label>CPF</label>
               <input type="text" v-model="form.identidade" class="input-modern"
-                :readonly="isEditing" :placeholder="isEditing ? '' : 'Ex: 123.456.789-00'" required>
-              <small v-if="isEditing" class="text-muted">O login não pode ser alterado.</small>
+                :readonly="isEditing" placeholder="000.000.000-00" maxlength="14" @input="mascaraCPF" required>
+              <small v-if="isEditing" class="text-muted">O CPF não pode ser alterado.</small>
             </div>
             <div class="field">
               <label>{{ isEditing ? 'Nova Senha (deixe vazio para manter)' : 'Senha' }}</label>
@@ -156,7 +156,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useToast, useConfirm } from '../composables/useToast'
 import { UserService } from '@/services/UserService'
 import { MilitarService } from '@/services/MilitarService'
@@ -172,6 +172,32 @@ const isEditing = ref(false)
 const editId = ref(null)
 
 const form = ref({ identidade: '', senha: '', role: 'user', ativo: '1', subunidade: '', nome: '', posto_grad: '', militar_id: '' })
+
+const mascaraCPF = (e) => {
+  let v = e.target.value.replace(/\D/g, '').substring(0, 11)
+  v = v.replace(/(\d{3})(\d)/, '$1.$2')
+  v = v.replace(/(\d{3})(\d)/, '$1.$2')
+  v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+  form.value.identidade = v
+}
+
+watch(() => form.value.militar_id, (novoId) => {
+  if (!isEditing.value && novoId) {
+    const m = militaresList.value.find(item => item.id == novoId)
+    if (m) {
+      if (m.cpf) {
+        let v = m.cpf.replace(/\D/g, '').substring(0, 11)
+        v = v.replace(/(\d{3})(\d)/, '$1.$2')
+        v = v.replace(/(\d{3})(\d)/, '$1.$2')
+        v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+        form.value.identidade = v
+      }
+      form.value.nome = m.nome_completo || m.nome_guerra || ''
+      form.value.posto_grad = m.posto_grad || ''
+      form.value.subunidade = m.subunidade || ''
+    }
+  }
+})
 
 const roleLabel = (r) => {
   const map = { admin: 'Administrador', sargenteacao: 'Sargenteação', s2: 'S2 / Inteligência', enc_mat: 'Enc. Material', user: 'Usuário' }
@@ -223,7 +249,7 @@ const openEdit = (user) => {
 
 const handleSave = async () => {
   if (!form.value.identidade || (!isEditing.value && !form.value.senha)) {
-    toastWarning("Preencha Login e Senha para novo usuário.")
+    toastWarning("Preencha CPF e Senha para novo usuário.")
     return
   }
   
