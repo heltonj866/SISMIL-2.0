@@ -47,6 +47,12 @@ const router = createRouter({
           path: 'arranchamento-painel',
           name: 'arranchamento_admin',
           component: () => import('../views/ArranchamentoAdminView.vue')
+        },
+        {
+          path: 'auditoria',
+          name: 'auditoria',
+          component: () => import('../views/AuditView.vue'),
+          meta: { requiresAuth: true, requiresAdmin: true }
         }
       ]
     },
@@ -60,8 +66,12 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
+
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next('/login')
+  } else if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    // Redireciona usuários sem permissão de admin para o dashboard
+    next('/dashboard')
   } else if (to.path === '/login' && authStore.isAuthenticated) {
     next('/dashboard')
   } else {

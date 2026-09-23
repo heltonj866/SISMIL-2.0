@@ -27,6 +27,10 @@
         <router-link v-if="isAdmin" to="/admin" class="nav-item">
           <i class="fas fa-user-shield"></i> Administração
         </router-link>
+        <!-- Auditoria: somente admin -->
+        <router-link v-if="isAdmin" to="/auditoria" class="nav-item">
+          <i class="fas fa-shield-alt"></i> Auditoria
+        </router-link>
       </div>
 
       <div class="user-info">

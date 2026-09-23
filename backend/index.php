@@ -30,6 +30,7 @@ require_once __DIR__ . '/src/Controllers/VeiculoController.php';
 require_once __DIR__ . '/src/Controllers/ArranchamentoController.php';
 require_once __DIR__ . '/src/Controllers/DashboardController.php';
 require_once __DIR__ . '/src/Controllers/UserController.php';
+require_once __DIR__ . '/src/Controllers/AuditController.php';
 
 use Sismil\Core\Request;
 use Sismil\Core\Router;
@@ -41,6 +42,7 @@ use Sismil\Controllers\VeiculoController;
 use Sismil\Controllers\ArranchamentoController;
 use Sismil\Controllers\DashboardController;
 use Sismil\Controllers\UserController;
+use Sismil\Controllers\AuditController;
 
 $request = new Request();
 $router = new Router();
@@ -85,6 +87,10 @@ $router->get('/api/user/list', [UserController::class, 'get']);
 $router->post('/api/user/create', [UserController::class, 'create']);
 $router->post('/api/user/update', [UserController::class, 'update']);
 $router->post('/api/user/delete', [UserController::class, 'delete']);
+
+// --- AUDITORIA (somente admin) ---
+$router->get('/api/auditoria/list', [AuditController::class, 'list']);
+$router->get('/api/auditoria/acoes', [AuditController::class, 'acoes']);
 
 // ==========================================
 // DISPATCH
