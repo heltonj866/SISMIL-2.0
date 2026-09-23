@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="audit-page">
     <div class="page-header">
       <div>
@@ -141,10 +141,10 @@ const buscar = async () => {
     })
     const res  = await fetch('/sismil/backend/api/auditoria/list?' + p, { credentials: 'include' })
     const json = await res.json()
-    if (json.dados) {
-      logs.value     = json.dados.logs || []
-      total.value    = json.dados.total || 0
-      totalPag.value = json.dados.total_pag || 1
+    if (json.status === 'sucesso') {
+      logs.value     = json.logs || []
+      total.value    = json.total || 0
+      totalPag.value = json.total_pag || 1
     }
   } catch (e) {
     console.error('[Auditoria]', e)
@@ -157,7 +157,7 @@ const buscarAcoes = async () => {
   try {
     const res  = await fetch('/sismil/backend/api/auditoria/acoes', { credentials: 'include' })
     const json = await res.json()
-    tiposAcao.value = json.dados?.acoes || []
+    tiposAcao.value = json.acoes || []
   } catch (e) { /* silencioso */ }
 }
 
