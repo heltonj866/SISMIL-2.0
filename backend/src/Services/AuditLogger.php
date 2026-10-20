@@ -56,18 +56,24 @@ class AuditLogger {
     }
 
     /**
-     * Obtém o endereço IP real do cliente.
+     * Obtém o endereço IP do cliente de forma confiável.
+     * Por padrão usa SOMENTE REMOTE_ADDR (não forjável pelo cliente). O cabeçalho
+     * X-Forwarded-For só é considerado se REMOTE_ADDR estiver na lista de proxies
+     * confiáveis (constante opcional TRUSTED_PROXIES, array de IPs, definida em config.php).
      * @return string Endereço IP.
      */
     private static function getClientIp(): string {
-        $ip = 'UNKNOWN';
-        if (isset($_SERVER['HTTP_CLIENT_IP'])) {
-            $ip = $_SERVER['HTTP_CLIENT_IP'];
-        } elseif (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
-        } elseif (isset($_SERVER['REMOTE_ADDR'])) {
-            $ip = $_SERVER['REMOTE_ADDR'];
+        $remote = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
+
+        if (defined('TRUSTED_PROXIES') && is_array(TRUSTED_PROXIES)
+            && in_array($remote, TRUSTED_PROXIES, true)
+            && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            // Primeiro IP da cadeia = cliente original; valida o formato antes de aceitar
+            $candidato = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
+            if (filter_var($candidato, FILTER_VALIDATE_IP)) {
+                return $candidato;
+            }
         }
-        return $ip;
+        return $remote;
     }
 }

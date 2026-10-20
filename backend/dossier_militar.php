@@ -3,6 +3,7 @@
 require_once __DIR__ . '/security.php';
 session_start();
 require_login(); // Apenas usuários autenticados
+require_once __DIR__ . '/src/Services/AuditLogger.php';
 require_once __DIR__ . '/src/Repositories/MilitarRepository.php';
 require_once __DIR__ . '/src/Repositories/VeiculoRepository.php';
 require_once __DIR__ . '/src/Repositories/AlteracaoRepository.php';
@@ -37,6 +38,7 @@ try {
 function dataBR($data) { 
     return (!empty($data) && $data != '0000-00-00') ? date('d/m/Y', strtotime($data)) : '---'; 
 }
+\Sismil\Services\AuditLogger::log('DOSSIE_MILITAR', 'Dossiê consultado/impresso do militar ID ' . (int)$id . '.');
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">

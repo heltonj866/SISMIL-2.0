@@ -76,8 +76,8 @@ class ArranchamentoRepository {
             
             foreach ($refeicoes as $ref) {
                 $data   = $ref['data'];
-                $cafe   = (int)$ref['cafe'];
-                $almoco = (int)$ref['almoco'];
+                $cafe   = (int)($ref['cafe'] ?? 0);
+                $almoco = (int)($ref['almoco'] ?? 0);
                 
                 $datasArranchadas[] = $data;
 

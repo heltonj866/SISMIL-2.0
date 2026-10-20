@@ -3,6 +3,7 @@
 require_once __DIR__ . '/security.php';
 session_start();
 require_login(['admin', 's2']);
+require_once __DIR__ . '/src/Services/AuditLogger.php';
 require_once __DIR__ . '/src/Repositories/VeiculoRepository.php';
 
 use Sismil\Repositories\VeiculoRepository;
@@ -16,6 +17,7 @@ try {
 }
 
 $data_atual = date('d/m/Y H:i');
+\Sismil\Services\AuditLogger::log('RELATORIO_S2', 'Relatório geral de veículos (S2) gerado: ' . count($veiculos) . ' veículo(s).');
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">

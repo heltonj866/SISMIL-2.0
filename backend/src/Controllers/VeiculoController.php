@@ -31,6 +31,7 @@ class VeiculoController {
         try {
             $service = new VeiculoService();
             $service->salvarVeiculo($_POST);
+            \Sismil\Services\AuditLogger::log('VEICULO_SALVAR', 'Veículo placa ' . mb_substr(preg_replace('/[\x00-\x1F]/', '', (string)($_POST['placa'] ?? '')), 0, 10) . ' salvo (militar ID ' . (int)($_POST['militar_id'] ?? 0) . ').');
             Response::json(null, "Veículo salvo com sucesso.");
         } catch (\Exception $e) {
             error_log("[SISMIL] Erro no save_veiculo: " . $e->getMessage());
@@ -54,6 +55,7 @@ class VeiculoController {
             $service = new VeiculoService();
             $service->homologarVeiculo($id, $homologado, $obs);
             
+            \Sismil\Services\AuditLogger::log('VEICULO_HOMOLOGACAO', 'Veículo ID ' . $id . ' marcado como ' . ($homologado ? 'HOMOLOGADO' : 'NÃO homologado') . '.');
             Response::json(null, "Status do veículo atualizado com sucesso.");
         } catch (\Exception $e) {
             error_log("[SISMIL] Erro ao homologar veículo: " . $e->getMessage());
@@ -70,6 +72,7 @@ class VeiculoController {
             $service = new VeiculoService();
             $service->excluirVeiculo($id);
             
+            \Sismil\Services\AuditLogger::log('VEICULO_EXCLUSAO', 'Veículo ID ' . $id . ' excluído.');
             Response::json(null, "Veículo excluído com sucesso.");
         } catch (\Exception $e) {
             error_log("[SISMIL] Erro ao excluir veículo: " . $e->getMessage());

@@ -3,6 +3,7 @@
 require_once __DIR__ . '/security.php';
 session_start();
 require_login(['admin', 'enc_mat']);
+require_once __DIR__ . '/src/Services/AuditLogger.php';
 require_once __DIR__ . '/src/Repositories/ArranchamentoRepository.php';
 
 use Sismil\Repositories\ArranchamentoRepository;
@@ -67,6 +68,7 @@ function renderTable($title, $registros) {
     echo "</tbody></table>";
 }
 
+\Sismil\Services\AuditLogger::log('ARRANCHAMENTO_IMPRESSAO', 'Planilha de arranchamento impressa para a data ' . preg_replace('/[^0-9-]/', '', (string)$data) . '.');
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">

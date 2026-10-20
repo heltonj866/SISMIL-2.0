@@ -203,7 +203,15 @@ class MilitarRepository {
             elseif ($filtro === 'PRO') $sql .= " AND (cat_cnh LIKE '%C%' OR cat_cnh LIKE '%D%' OR cat_cnh LIKE '%E%' OR cat_cnh LIKE '%AD%' OR cat_cnh LIKE '%AE%')";
         }
 
-        $sql .= " ORDER BY nome_guerra ASC";
+        // Ordem hierárquica (mesmo critério da busca): posto/graduação, antiguidade (data de praça), número
+        $sql .= " ORDER BY
+            CASE posto_grad
+                WHEN 'Gen Ex' THEN 1 WHEN 'Gen Div' THEN 2 WHEN 'Gen Bda' THEN 3 WHEN 'Cel' THEN 4
+                WHEN 'TC' THEN 5 WHEN 'Maj' THEN 6 WHEN 'Cap' THEN 7 WHEN '1º Ten' THEN 8
+                WHEN '2º Ten' THEN 9 WHEN 'Asp' THEN 10 WHEN 'S Ten' THEN 11 WHEN '1º Sgt' THEN 12
+                WHEN '2º Sgt' THEN 13 WHEN '3º Sgt' THEN 14 WHEN 'Alu' THEN 15 WHEN 'Cb' THEN 16
+                WHEN 'Sd EP' THEN 17 WHEN 'Sd EV' THEN 18 WHEN 'SC' THEN 99 ELSE 100
+            END ASC, dt_praca ASC, CAST(numero AS UNSIGNED) ASC, nome_guerra ASC";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);

@@ -3,6 +3,7 @@
 require_once __DIR__ . '/security.php';
 session_start();
 require_login(); // Qualquer usuário autenticado
+require_once __DIR__ . '/src/Services/AuditLogger.php';
 require_once __DIR__ . '/src/Repositories/MilitarRepository.php';
 
 use Sismil\Repositories\MilitarRepository;
@@ -26,6 +27,7 @@ try {
     echo "Erro ao gerar relatório.";
     exit;
 }
+\Sismil\Services\AuditLogger::log('EXPORTACAO_LISTA', 'Exportação de planilha de efetivo: ' . count($lista) . ' registro(s). Filtros: ' . http_build_query(array_intersect_key($_GET, array_flip(['tipo_busca','termo','posto','su','qmg','sem_foto','mes_aniversario','filtro_cnh','inativos']))));
 ?>
 
 <!DOCTYPE html>

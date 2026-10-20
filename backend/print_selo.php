@@ -3,6 +3,7 @@
 require_once __DIR__ . '/security.php';
 session_start();
 require_login(['admin', 's2']); // Apenas admin ou s2 podem emitir selo
+require_once __DIR__ . '/src/Services/AuditLogger.php';
 require_once __DIR__ . '/src/Repositories/VeiculoRepository.php';
 
 use Sismil\Repositories\VeiculoRepository;
@@ -75,6 +76,7 @@ try {
     error_log("[SISMIL] Erro ao carregar selo: " . $e->getMessage());
     die("Ocorreu um erro interno ao gerar o selo.");
 }
+\Sismil\Services\AuditLogger::log('SELO_IMPRESSO', 'Selo de veículo emitido (veículo ID ' . (int)$veiculo_id . ').');
 ?>
 
 <!DOCTYPE html>

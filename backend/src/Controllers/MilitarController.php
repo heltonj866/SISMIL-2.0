@@ -77,8 +77,17 @@ class MilitarController {
         
         try {
             $service = new MilitarService();
+            $ehEdicao = !empty($_POST['id']) || !empty($_POST['id_militar']);
             $id = $service->salvarMilitar($_POST);
             
+            \Sismil\Services\AuditLogger::log($ehEdicao ? 'MILITAR_EDICAO' : 'MILITAR_CADASTRO', 'Militar ID ' . (int)$id . ' (' . mb_substr(preg_replace('/[\x00-\x1F]/', '', (string)($_POST['nome_guerra'] ?? '')), 0, 60) . ') ' . ($ehEdicao ? 'atualizado.' : 'cadastrado.'));
+            $arquivos = [];
+            foreach ($_FILES as $campo => $f) {
+                if (is_array($f) && isset($f['error']) && $f['error'] === UPLOAD_ERR_OK) { $arquivos[] = $campo; }
+            }
+            if (!empty($arquivos)) {
+                \Sismil\Services\AuditLogger::log('UPLOAD_ARQUIVO', 'Arquivos enviados para o militar ID ' . (int)$id . ': ' . implode(', ', $arquivos));
+            }
             Response::json(['id' => $id], "Militar salvo com sucesso");
         } catch (\Exception $e) {
             error_log("[SISMIL] Erro ao salvar militar: " . $e->getMessage());
@@ -109,6 +118,7 @@ class MilitarController {
             $service = new MilitarService();
             $service->desligarMilitar($id, $motivo, $data_desligamento);
             
+            \Sismil\Services\AuditLogger::log('MILITAR_DESLIGAMENTO', 'Militar ID ' . $id . ' desligado. Motivo: ' . mb_substr(preg_replace('/[\x00-\x1F]/', '', (string)$motivo), 0, 100) . ' | Data: ' . $data_desligamento);
             Response::json(null, "Militar desligado com sucesso. Status alterado para inativo.");
         } catch (\Exception $e) {
             error_log("[SISMIL] Erro ao desligar militar: " . $e->getMessage());

@@ -63,6 +63,8 @@ class ArranchamentoController {
             $service = new ArranchamentoService();
             $service->salvarArranchamento($input);
             Response::json(null, "Arranchamento registrado com sucesso.");
+        } catch (\InvalidArgumentException $e) {
+            Response::error($e->getMessage(), 400);
         } catch (\Exception $e) {
             error_log("[SISMIL] Erro ao salvar arranchamento: " . $e->getMessage());
             Response::error('Erro ao registrar arranchamento. Tente novamente.', 500);
@@ -98,6 +100,7 @@ class ArranchamentoController {
                 $repo->salvarExtra($input);
             }
             
+            \Sismil\Services\AuditLogger::log('ARRANCHAMENTO_EXTRA', 'Extras/ajuste de arranchamento lançado (' . (!empty($input['is_batch']) ? 'lote' : 'individual') . ') data ' . mb_substr((string)($input['data'] ?? ($input['items'][0]['data'] ?? '')), 0, 10) . '.');
             Response::json(null, "Arranchamento atualizado/salvo com sucesso.");
         } catch (\Exception $e) {
             error_log("[SISMIL] Erro ao salvar arranchamento extra: " . $e->getMessage());
