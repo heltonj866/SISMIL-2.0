@@ -38,6 +38,38 @@ try {
 function dataBR($data) { 
     return (!empty($data) && $data != '0000-00-00') ? date('d/m/Y', strtotime($data)) : '---'; 
 }
+
+function valOrDash($val, $upper = false) {
+    $v = trim((string)($val ?? ''));
+    if ($v === '') return '---';
+    return $upper ? mb_strtoupper($v, 'UTF-8') : $v;
+}
+
+$pelSecaoParts = array_filter([trim((string)($m['pelotao'] ?? '')), trim((string)($m['secao'] ?? ''))], fn($p) => $p !== '');
+$pelSecaoTexto = !empty($pelSecaoParts) ? implode(' / ', $pelSecaoParts) : '---';
+
+$endParts = [];
+if (!empty(trim((string)($m['endereco'] ?? '')))) {
+    $endParts[] = trim($m['endereco']);
+}
+if (!empty(trim((string)($m['num_residencia'] ?? '')))) {
+    $endParts[] = 'Nº ' . trim($m['num_residencia']);
+}
+$endFormatado = !empty($endParts) ? implode(', ', $endParts) : '';
+if (!empty(trim((string)($m['bairro'] ?? '')))) {
+    $endFormatado .= ($endFormatado !== '' ? ' - ' : '') . trim($m['bairro']);
+}
+if ($endFormatado === '') {
+    $endFormatado = '---';
+}
+
+$cidUfParts = array_filter([trim((string)($m['cidade'] ?? '')), trim((string)($m['estado'] ?? ''))], fn($p) => $p !== '');
+$cidUfTexto = !empty($cidUfParts) ? implode('/', $cidUfParts) : '---';
+
+$fotoNome = trim((string)($m['foto_path'] ?? ''));
+$temFoto = ($fotoNome !== '' && !in_array(strtolower($fotoNome), ['sem_foto.png', 'sem_foto.svg'], true));
+$foto_src = $temFoto ? '../uploads/' . $fotoNome : '';
+
 \Sismil\Services\AuditLogger::log('DOSSIE_MILITAR', 'Dossiê consultado/impresso do militar ID ' . (int)$id . '.');
 ?>
 <!DOCTYPE html>
@@ -46,26 +78,194 @@ function dataBR($data) {
     <meta charset="UTF-8">
     <title>Dossier Militar - <?php echo h($m['posto_grad']) . ' ' . h($m['nome_guerra']); ?></title>
     <style>
-        body { font-family: 'Arial', sans-serif; margin: 0; background: #525659; }
-        .page { background: #fff; width: 210mm; min-height: 297mm; margin: 20px auto; padding: 20mm; box-shadow: 0 0 10px rgba(0,0,0,0.5); box-sizing: border-box; position: relative; }
-        .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-        .header img { width: 80px; position: absolute; left: 20mm; top: 20mm; }
-        .header h3, .header h4 { margin: 3px 0; font-weight: bold; text-transform: uppercase; font-size: 14px;}
-        .section-title { background: #e0e0e0; font-weight: bold; text-transform: uppercase; padding: 5px; margin: 20px 0 10px 0; font-size: 13px; border: 1px solid #000; clear: both; }
-        .row { display: flex; flex-wrap: wrap; margin-bottom: 5px; }
-        .col { flex: 1; padding: 0 5px; }
-        .col-2 { flex: 2; } .col-3 { flex: 3; }
-        .label { font-size: 10px; color: #555; text-transform: uppercase; font-weight: bold; }
-        .value { font-size: 13px; font-weight: normal; border-bottom: 1px dotted #ccc; padding-bottom: 2px; }
-        .foto-container { width: 110px; height: 140px; border: 1px solid #000; display: flex; justify-content: center; align-items: center; float: right; margin-left: 20px; background-size: cover; background-position: center; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
-        th, td { border: 1px solid #000; padding: 5px; text-align: left; }
-        th { background: #f0f0f0; text-transform: uppercase; }
-        
-        .status-stamp { color: #d32f2f; font-size: 24px; font-weight: bold; border: 3px solid #d32f2f; padding: 5px 15px; display: inline-block; transform: rotate(-10deg); position: absolute; top: 30mm; right: 50mm; opacity: 0.8;}
-        
-        @media print { body { background: #fff; } .page { margin: 0; padding: 15mm; box-shadow: none; } .no-print { display: none; } }
+        @page {
+            size: A4 portrait;
+            margin: 12mm 14mm;
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            background: #525659;
+            color: #000;
+        }
+        .page {
+            background: #fff;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 20px auto;
+            padding: 15mm 16mm;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        .header {
+            position: relative;
+            min-height: 78px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding: 4px 75px 12px 75px;
+            margin-bottom: 14px;
+        }
+        .header img {
+            width: 62px;
+            height: auto;
+            position: absolute;
+            left: 4px;
+            top: 50%;
+            transform: translateY(-54%);
+        }
+        .header h3, .header h4 {
+            margin: 2px 0;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 13.5px;
+            line-height: 1.25;
+        }
+        .section-title {
+            background: #e0e0e0;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 5px 8px;
+            margin: 14px 0 8px 0;
+            font-size: 12px;
+            border: 1px solid #000;
+            clear: both;
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+        .row {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .col { flex: 1; min-width: 0; }
+        .col-2 { flex: 2; min-width: 0; }
+        .col-3 { flex: 3; min-width: 0; }
+        .label {
+            font-size: 9.5px;
+            color: #444;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        .value {
+            font-size: 12.5px;
+            font-weight: normal;
+            border-bottom: 1px dotted #999;
+            padding-bottom: 2px;
+            min-height: 17px;
+            word-break: break-word;
+        }
+        .fw-bold { font-weight: bold; }
+
+        .foto-container {
+            width: 108px;
+            height: 142px;
+            border: 1px solid #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background: #f8f9fa;
+            flex-shrink: 0;
+        }
+        .foto-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center 15%;
+            display: block;
+        }
+        .sem-foto-label {
+            font-size: 10px;
+            font-weight: bold;
+            color: #666;
+            text-align: center;
+            padding: 4px;
+        }
+
+        ul.doc-list {
+            margin: 6px 0 10px 0;
+            padding-left: 22px;
+            font-size: 12px;
+        }
+        ul.doc-list li {
+            margin-bottom: 3px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 6px;
+            font-size: 11px;
+            page-break-inside: auto;
+        }
+        tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        th, td {
+            border: 1px solid #000;
+            padding: 5px 6px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th {
+            background: #f0f0f0;
+            text-transform: uppercase;
+            font-size: 10.5px;
+        }
+
+        .status-stamp {
+            color: #d32f2f;
+            font-size: 22px;
+            font-weight: bold;
+            border: 3px solid #d32f2f;
+            padding: 4px 14px;
+            display: inline-block;
+            transform: rotate(-10deg);
+            position: absolute;
+            top: 22mm;
+            right: 45mm;
+            opacity: 0.85;
+            z-index: 10;
+        }
+
+        .footer-assinatura {
+            margin-top: 28px;
+            text-align: center;
+            font-size: 11px;
+            color: #555;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        @media print {
+            html, body {
+                background: #fff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .page {
+                width: 100% !important;
+                min-height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -76,11 +276,11 @@ function dataBR($data) {
 
 <div class="page">
     <div class="header">
-        <img src="../uploads/brasao.png" alt="Brasão">
+        <img src="../uploads/brasao.png" alt="Brasão" onerror="this.style.display='none'">
         <h4>MINISTÉRIO DA DEFESA</h4>
         <h4>EXÉRCITO BRASILEIRO</h4>
         <h4>2º BATALHÃO DE ENGENHARIA DE CONSTRUÇÃO</h4>
-        <h4 style="margin-top: 15px; text-decoration: underline;">DOSSIER INDIVIDUAL DE PESSOAL (SISMIL)</h4>
+        <h4 style="margin-top: 10px; text-decoration: underline;">DOSSIER INDIVIDUAL DE PESSOAL (SISMIL)</h4>
     </div>
 
     <?php if($m['status_ativo'] == 0): ?>
@@ -89,59 +289,59 @@ function dataBR($data) {
 
     <div class="section-title">1. Dados Pessoais e Organizacionais</div>
     
-    <div style="display: flex; gap: 20px; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+    <div style="display: flex; gap: 16px; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
         
-        <div style="flex: 1;">
+        <div style="flex: 1; min-width: 0;">
             <div class="row">
-                <div class="col-3"><div class="label">Nome Completo</div><div class="value fw-bold"><?php echo h(strtoupper($m['nome_completo'])); ?></div></div>
-            </div>
-            <div class="row" style="margin-top: 10px;">
-                <div class="col"><div class="label">Posto / Grad</div><div class="value"><?php echo h(strtoupper($m['posto_grad'])); ?></div></div>
-                <div class="col"><div class="label">Nome de Guerra</div><div class="value fw-bold"><?php echo h(strtoupper($m['nome_guerra'])); ?></div></div>
-                <div class="col"><div class="label">Número</div><div class="value"><?php echo $m['numero'] ? h($m['numero']) : '---'; ?></div></div>
+                <div class="col-3"><div class="label">Nome Completo</div><div class="value fw-bold"><?php echo h(valOrDash($m['nome_completo'], true)); ?></div></div>
             </div>
             <div class="row">
-                <div class="col"><div class="label">Idt Militar</div><div class="value"><?php echo h($m['idt_militar']); ?></div></div>
-                <div class="col"><div class="label">CPF</div><div class="value"><?php echo $m['cpf'] ? h($m['cpf']) : '---'; ?></div></div>
+                <div class="col"><div class="label">Posto / Grad</div><div class="value"><?php echo h(valOrDash($m['posto_grad'], true)); ?></div></div>
+                <div class="col"><div class="label">Nome de Guerra</div><div class="value fw-bold"><?php echo h(valOrDash($m['nome_guerra'], true)); ?></div></div>
+                <div class="col"><div class="label">Número</div><div class="value"><?php echo h(valOrDash($m['numero'])); ?></div></div>
+            </div>
+            <div class="row">
+                <div class="col"><div class="label">Idt Militar</div><div class="value"><?php echo h(valOrDash($m['idt_militar'])); ?></div></div>
+                <div class="col"><div class="label">CPF</div><div class="value"><?php echo h(valOrDash($m['cpf'])); ?></div></div>
                 <div class="col"><div class="label">Nascimento</div><div class="value"><?php echo h(dataBR($m['dt_nascimento'])); ?></div></div>
-                <div class="col"><div class="label">Tipo Sanguíneo</div><div class="value"><?php echo h($m['tipo_sanguineo']); ?></div></div>
+                <div class="col"><div class="label">Tipo Sanguíneo</div><div class="value"><?php echo h(valOrDash($m['tipo_sanguineo'])); ?></div></div>
             </div>
-            <div class="row">
-                <div class="col"><div class="label">Subunidade</div><div class="value"><?php echo h($m['subunidade']); ?></div></div>
-                <div class="col"><div class="label">Pelotão/Seção</div><div class="value"><?php echo h($m['pelotao'] . ' / ' . $m['secao']); ?></div></div>
-                <div class="col"><div class="label">Arma / QMG</div><div class="value"><?php echo h($m['qmg']); ?></div></div>
+            <div class="row" style="margin-bottom: 0;">
+                <div class="col"><div class="label">Subunidade</div><div class="value"><?php echo h(valOrDash($m['subunidade'])); ?></div></div>
+                <div class="col"><div class="label">Pelotão/Seção</div><div class="value"><?php echo h($pelSecaoTexto); ?></div></div>
+                <div class="col"><div class="label">Arma / QMG</div><div class="value"><?php echo h(valOrDash($m['qmg'])); ?></div></div>
                 <div class="col"><div class="label">Data de Praça</div><div class="value"><?php echo h(dataBR($m['dt_praca'])); ?></div></div>
             </div>
         </div>
 
-        <div style="width: 110px; flex-shrink: 0; display: flex; justify-content: center;">
-            <?php 
-                $foto_src = $m['foto_path'] ? '../uploads/' . $m['foto_path'] : '../assets/sem_foto.png';
-            ?>
-            <div class="foto-container" style="background-image: url('<?php echo h($foto_src); ?>'); float: none; margin: 0;">
-                <?php if(!$m['foto_path']) echo "SEM FOTO"; ?>
-            </div>
+        <div class="foto-container">
+            <?php if ($temFoto): ?>
+                <img src="<?php echo h($foto_src); ?>" alt="Foto 3x4" class="foto-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <span class="sem-foto-label" style="display: none;">SEM FOTO</span>
+            <?php else: ?>
+                <span class="sem-foto-label">SEM FOTO</span>
+            <?php endif; ?>
         </div>
         
     </div>
 
     <div class="section-title">2. Contato e Plano de Chamada</div>
     <div class="row">
-        <div class="col"><div class="label">Celular Principal</div><div class="value"><?php echo h($m['celular_princ']); ?></div></div>
-        <div class="col"><div class="label">Celular Secundário</div><div class="value"><?php echo h($m['celular_sec']); ?></div></div>
-        <div class="col"><div class="label">Email</div><div class="value"><?php echo h($m['email']); ?></div></div>
+        <div class="col"><div class="label">Celular Principal</div><div class="value"><?php echo h(valOrDash($m['celular_princ'])); ?></div></div>
+        <div class="col"><div class="label">Celular Secundário</div><div class="value"><?php echo h(valOrDash($m['celular_sec'])); ?></div></div>
+        <div class="col"><div class="label">Email</div><div class="value"><?php echo h(valOrDash($m['email'])); ?></div></div>
     </div>
     <div class="row">
-        <div class="col-3"><div class="label">Endereço</div><div class="value"><?php echo h($m['endereco'] . ' Nº ' . $m['num_residencia'] . ' - ' . $m['bairro']); ?></div></div>
-        <div class="col"><div class="label">Cidade/UF</div><div class="value"><?php echo h($m['cidade'] . '/' . $m['estado']); ?></div></div>
+        <div class="col-3"><div class="label">Endereço</div><div class="value"><?php echo h($endFormatado); ?></div></div>
+        <div class="col"><div class="label">Cidade/UF</div><div class="value"><?php echo h($cidUfTexto); ?></div></div>
     </div>
     <div class="row">
-        <div class="col"><div class="label">Pessoa de Referência (Emergência)</div><div class="value"><?php echo $m['nome_resp'] ? h($m['nome_resp']) : '---'; ?></div></div>
-        <div class="col"><div class="label">Telefone da Referência</div><div class="value"><?php echo $m['tel_resp'] ? h($m['tel_resp']) : '---'; ?></div></div>
+        <div class="col"><div class="label">Pessoa de Referência (Emergência)</div><div class="value"><?php echo h(valOrDash($m['nome_resp'])); ?></div></div>
+        <div class="col"><div class="label">Telefone da Referência</div><div class="value"><?php echo h(valOrDash($m['tel_resp'])); ?></div></div>
     </div>
 
     <div class="section-title">3. Documentação Anexada ao SISMIL</div>
-    <ul>
+    <ul class="doc-list">
         <?php if($m['pdf_habilitacao']): ?> <li>CNH do Militar (Digitalizada)</li> <?php endif; ?>
         <?php if($m['status_ativo'] == 0 && $m['pdf_nada_consta']): ?> <li style="color:red; font-weight:bold;">Ficha de Nada Consta (Desligamento) anexada ao sistema.</li> <?php endif; ?>
         <?php foreach($veiculos as $v): ?>
@@ -181,7 +381,7 @@ function dataBR($data) {
 
     <div class="section-title">4. Veículos Cadastrados e Trânsito</div>
     <div class="row">
-        <div class="col"><div class="label">Categoria da CNH</div><div class="value"><?php echo $m['cat_cnh'] ? h($m['cat_cnh']) : 'NÃO POSSUI'; ?></div></div>
+        <div class="col"><div class="label">Categoria da CNH</div><div class="value"><?php echo !empty(trim((string)($m['cat_cnh'] ?? ''))) ? h($m['cat_cnh']) : 'NÃO POSSUI'; ?></div></div>
         <div class="col"><div class="label">Validade CNH</div><div class="value"><?php echo h(dataBR($m['validade_cnh'])); ?></div></div>
     </div>
     <table>
@@ -225,9 +425,9 @@ function dataBR($data) {
         </tbody>
     </table>
 
-    <div style="margin-top: 50px; text-align: center; font-size: 11px; color: #666;">
-        <p>______________________________________________________</p>
-        <p>Gerado pelo SISMIL em <?php echo date('d/m/Y H:i'); ?><br>Documento de uso interno administrativo.</p>
+    <div class="footer-assinatura">
+        <p style="margin-bottom: 4px;">______________________________________________________</p>
+        <p style="margin-top: 0;">Gerado pelo SISMIL em <?php echo date('d/m/Y H:i'); ?><br>Documento de uso interno administrativo.</p>
     </div>
 </div>
 
