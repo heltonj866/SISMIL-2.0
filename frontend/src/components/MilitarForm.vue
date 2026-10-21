@@ -24,7 +24,7 @@
           <div class="form-grid basic-grid">
             <div class="input-group">
               <label>CPF</label>
-              <input type="text" v-model="form.cpf" class="input-modern" :readonly="isEdicao || modoS2"
+              <input type="text" v-model="form.cpf" class="input-modern" :readonly="(isEdicao && !!(dadosCompletos?.cpf || dadosCompletos?.identidade)) || modoS2"
                 placeholder="000.000.000-00" @input="mascaraCPF" maxlength="14">
             </div>
             <div class="input-group">
@@ -233,7 +233,7 @@
             </div>
             <div class="input-group">
               <label>Validade CNH</label>
-              <input type="date" v-model="form.validade_cnh" class="input-modern" :disabled="isReadonly || !form.cat_cnh">
+              <input type="date" v-model="form.validade_cnh" class="input-modern" :disabled="isReadonly">
             </div>
             <!-- CNH PDF: upload para admin/sargenteacao, visualização para S2 -->
             <div class="input-group full-width">
@@ -246,7 +246,7 @@
                   <i class="fas fa-file-pdf fa-lg"></i>
                   <span>Visualizar CNH Anexada</span>
                 </a>
-                <span class="text-muted small ml-2">Clique para abrir o PDF</span>
+                <span class="text-muted small ml-2">Clique para abrir o PDF atual</span>
               </div>
               <!-- Se não tem CNH -->
               <div v-else class="cnh-empty-box">
@@ -262,6 +262,10 @@
                     {{ fileUploads.pdf_habilitacao ? fileUploads.pdf_habilitacao.name : (dadosCompletos?.pdf_habilitacao ? 'Substituir CNH (PDF)' : 'Selecionar CNH (PDF)') }}
                   </span>
                 </label>
+                <div v-if="fileUploads.pdf_habilitacao" class="cnh-new-file-notice">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Novo PDF selecionado: <strong>{{ fileUploads.pdf_habilitacao.name }}</strong> — clique em <strong>Salvar Dados</strong> no rodapé para substituir a CNH antiga.</span>
+                </div>
               </div>
             </div>
           </div>
@@ -388,18 +392,74 @@ const props = defineProps({
   readonlyAll: {
     type: Boolean,
     default: false
+  },
+  abaInicial: {
+    type: String,
+    default: ''
   }
 })
+
+const emit = defineEmits(['cancel', 'saved'])
 
 const authStore = useAuthStore()
 const canEdit = computed(() => authStore.canEdit)
 const canDelete = computed(() => authStore.canDelete)
-
 const isReadonly = computed(() => props.readonlyAll || props.modoS2 || !canEdit.value)
-const emit = defineEmits(['cancel', 'saved'])
+const isEdicao = computed(() => !!props.militar?.id)
+
+const normCnh = (v) => v ? String(v).trim().toUpperCase().replace(/[^A-E]/g, '') : ''
+const normDate = (v) => (!v || v === '0000-00-00') ? '' : String(v).substring(0, 10)
+
+const postos = ["Cel", "TC", "Maj", "Cap", "1º Ten", "2º Ten", "Asp", "S Ten", "1º Sgt", "2º Sgt", "3º Sgt", "Alu", "Cb", "Sd EP", "Sd EV", "SC"]
+
+const form = ref({
+  id: props.militar?.id || '',
+  id_militar: props.militar?.id || '',
+  cpf: props.militar?.cpf || props.militar?.identidade || '',
+  posto_grad: props.militar?.posto_grad || '',
+  numero: props.militar?.numero || '',
+  nome_guerra: props.militar?.nome_guerra || '',
+  subunidade: props.militar?.subunidade || '',
+  pelotao: props.militar?.pelotao || '',
+  secao: props.militar?.secao || '',
+  nome_completo: props.militar?.nome_completo || '',
+  nome_pai: props.militar?.nome_pai || '',
+  nome_mae: props.militar?.nome_mae || '',
+  qmg: props.militar?.qmg || '',
+  dt_nascimento: normDate(props.militar?.dt_nascimento),
+  tipo_sanguineo: props.militar?.tipo_sanguineo || '',
+  dt_praca: normDate(props.militar?.dt_praca),
+  idt_militar: props.militar?.idt_militar || '',
+  email: props.militar?.email || '',
+  celular_princ: props.militar?.celular_princ || '',
+  celular_sec: props.militar?.celular_sec || '',
+  nome_resp: props.militar?.nome_resp || '',
+  tel_resp: props.militar?.tel_resp || '',
+  tel_emergencia: props.militar?.tel_emergencia || '',
+  cep: props.militar?.cep || '',
+  endereco: props.militar?.endereco || '',
+  num_residencia: props.militar?.num_residencia || '',
+  bairro: props.militar?.bairro || '',
+  cidade: props.militar?.cidade || '',
+  estado: props.militar?.estado || '',
+  cat_cnh: normCnh(props.militar?.cat_cnh),
+  validade_cnh: normDate(props.militar?.validade_cnh),
+})
+
+const fileUploads = ref({ foto: null, nada_consta: null, pdf_habilitacao: null })
+const fotoPreviewUrl = ref(null)
+const loading = ref(false)
+const dadosCompletos = ref(null)
+
+// Aba inicial: respeita abaInicial se informada, ou 'vehicle' no modo S2
+const activeTab = ref(props.abaInicial || (props.modoS2 ? 'vehicle' : 'basic'))
+
+watch(() => props.modoS2, (val) => {
+  if (val) activeTab.value = 'vehicle'
+})
 
 // ─── Detecção de alterações não salvas ───────────────────────────────────────
-const originalSnapshot = ref('')
+const originalSnapshot = ref(JSON.stringify(form.value))
 const isDirty = computed(() => JSON.stringify(form.value) !== originalSnapshot.value)
 
 const handleCancel = async () => {
@@ -420,10 +480,6 @@ const onBeforeUnloadHandler = (e) => {
 onMounted(() => window.addEventListener('beforeunload', onBeforeUnloadHandler))
 onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnloadHandler))
 
-const isEdicao = computed(() => !!props.militar?.id)
-const loading = ref(false)
-const dadosCompletos = ref(null) // dados buscados do backend
-
 watch(() => form.value.cat_cnh, (novaCat) => {
   if (!novaCat) {
     form.value.validade_cnh = ''
@@ -439,6 +495,9 @@ const fotoAtual = computed(() => {
 
 // Busca dados completos quando o militar tem ID
 const fetchDadosCompletos = async () => {
+  if (props.abaInicial) {
+    activeTab.value = props.abaInicial
+  }
   // Limpa prévias e arquivos anteriores
   if (fotoPreviewUrl.value) {
     URL.revokeObjectURL(fotoPreviewUrl.value)
@@ -467,9 +526,9 @@ const fetchDadosCompletos = async () => {
       form.value.nome_pai = d.nome_pai || ''
       form.value.nome_mae = d.nome_mae || ''
       form.value.qmg = d.qmg || ''
-      form.value.dt_nascimento = d.dt_nascimento || ''
+      form.value.dt_nascimento = normDate(d.dt_nascimento)
       form.value.tipo_sanguineo = d.tipo_sanguineo || ''
-      form.value.dt_praca = d.dt_praca || ''
+      form.value.dt_praca = normDate(d.dt_praca)
       form.value.idt_militar = d.idt_militar || ''
       form.value.email = d.email || ''
       form.value.celular_princ = d.celular_princ || ''
@@ -483,8 +542,8 @@ const fetchDadosCompletos = async () => {
       form.value.bairro = d.bairro || ''
       form.value.cidade = d.cidade || ''
       form.value.estado = d.estado || ''
-      form.value.cat_cnh = d.cat_cnh || ''
-      form.value.validade_cnh = d.validade_cnh || ''
+      form.value.cat_cnh = normCnh(d.cat_cnh)
+      form.value.validade_cnh = normDate(d.validade_cnh)
     }
   } catch (e) { console.error('Erro ao buscar dados do militar:', e) }
   // Tira snapshot após carregar para detectar alterações futuras
@@ -494,52 +553,6 @@ const fetchDadosCompletos = async () => {
 
 onMounted(fetchDadosCompletos)
 watch(() => props.militar?.id, fetchDadosCompletos)
-
-// Se s2, abrir direto na aba de veículo
-const activeTab = ref(props.modoS2 ? 'vehicle' : 'basic')
-
-watch(() => props.modoS2, (val) => {
-  if (val) activeTab.value = 'vehicle'
-})
-
-const postos = ["Cel", "TC", "Maj", "Cap", "1º Ten", "2º Ten", "Asp", "S Ten", "1º Sgt", "2º Sgt", "3º Sgt", "Alu", "Cb", "Sd EP", "Sd EV", "SC"]
-
-const form = ref({
-  id: props.militar?.id || '',
-  id_militar: props.militar?.id || '',
-  cpf: props.militar?.cpf || props.militar?.identidade || '',
-  posto_grad: props.militar?.posto_grad || '',
-  numero: props.militar?.numero || '',
-  nome_guerra: props.militar?.nome_guerra || '',
-  subunidade: props.militar?.subunidade || '',
-  pelotao: props.militar?.pelotao || '',
-  secao: props.militar?.secao || '',
-  nome_completo: props.militar?.nome_completo || '',
-  nome_pai: props.militar?.nome_pai || '',
-  nome_mae: props.militar?.nome_mae || '',
-  qmg: props.militar?.qmg || '',
-  dt_nascimento: props.militar?.dt_nascimento || '',
-  tipo_sanguineo: props.militar?.tipo_sanguineo || '',
-  dt_praca: props.militar?.dt_praca || '',
-  idt_militar: props.militar?.idt_militar || '',
-  email: props.militar?.email || '',
-  celular_princ: props.militar?.celular_princ || '',
-  celular_sec: props.militar?.celular_sec || '',
-  nome_resp: props.militar?.nome_resp || '',
-  tel_resp: props.militar?.tel_resp || '',
-  tel_emergencia: props.militar?.tel_emergencia || '',
-  cep: props.militar?.cep || '',
-  endereco: props.militar?.endereco || '',
-  num_residencia: props.militar?.num_residencia || '',
-  bairro: props.militar?.bairro || '',
-  cidade: props.militar?.cidade || '',
-  estado: props.militar?.estado || '',
-  cat_cnh: props.militar?.cat_cnh || '',
-  validade_cnh: props.militar?.validade_cnh || '',
-})
-
-const fileUploads = ref({ foto: null, nada_consta: null, pdf_habilitacao: null })
-const fotoPreviewUrl = ref(null)
 
 const comprimirImagem = (file, maxDim = 1000, quality = 0.88) => {
   return new Promise((resolve) => {
@@ -627,7 +640,7 @@ const buscarCep = async (manual = false) => {
   try {
     let json = null
     try {
-      const res = await apiFetch(`/sismil/backend/api/cep?cep=${v}`)
+      const res = await fetch(`/sismil/backend/api/cep?cep=${v}`, { credentials: 'include' })
       const data = await res.json()
       if (data.status === 'sucesso' && data.dados) {
         json = data.dados
@@ -664,7 +677,7 @@ const onCepInput = (e) => {
 
 const handleSave = async () => {
   if (!canEdit.value) return
-  if (!form.value.cpf || !form.value.posto_grad || !form.value.nome_guerra) {
+  if ((!isEdicao.value && !form.value.cpf) || !form.value.posto_grad || !form.value.nome_guerra) {
     toastWarning('Preencha os dados básicos obrigatórios: CPF, Posto/Grad e Nome de Guerra.')
     return
   }
@@ -777,7 +790,7 @@ const handleExcluirPermanente = async () => {
 .text-warning { color: #856404; }
 
 .cnh-upload-box { margin-top: 0.75rem; }
-.upload-label { cursor: pointer; display: block; }
+.upload-label { cursor: pointer; display: inline-block; }
 .input-file-hidden { display: none; }
 .upload-btn {
   display: inline-flex; align-items: center; gap: 0.5rem;
@@ -786,4 +799,17 @@ const handleExcluirPermanente = async () => {
   cursor: pointer; transition: all 0.2s;
 }
 .upload-btn:hover { background: #063a6e; }
+
+.cnh-new-file-notice {
+  margin-top: 0.6rem;
+  padding: 0.6rem 0.9rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  color: #1e40af;
+  font-size: 0.84rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
 </style>

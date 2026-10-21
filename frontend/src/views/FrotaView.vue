@@ -57,13 +57,14 @@
       </div>
     </div>
 
-    <!-- Formulário de Inspeção S2 (ficha readonly + veículos) -->
+    <!-- Formulário: Edição (admin/sargenteacao) ou Inspeção S2 (s2) -->
     <div class="form-area mt-4" v-if="showInspecao">
       <MilitarForm
         :militar="militarSelecionado"
-        :modoS2="true"
+        :modoS2="!canEdit"
+        abaInicial="vehicle"
         @cancel="showInspecao = false; militarSelecionado = null"
-        @saved="() => {}"
+        @saved="handleSaved"
       />
     </div>
 
@@ -77,9 +78,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from '../composables/useToast'
+import { useAuthStore } from '../stores/auth'
 import MilitarCard from '../components/MilitarCard.vue'
 import MilitarForm from '../components/MilitarForm.vue'
 import MilitarModalLeitura from '../components/MilitarModalLeitura.vue'
@@ -87,6 +89,8 @@ import { MilitarService } from '@/services/MilitarService'
 
 const { error: toastError } = useToast()
 const route = useRoute()
+const authStore = useAuthStore()
+const canEdit = computed(() => authStore.canEdit)
 
 const filtroOpts = [
   { value: 'TODAS', label: 'Todas' },
@@ -141,6 +145,12 @@ const abrirInspecao = (m) => {
   setTimeout(() => {
     document.querySelector('.form-area')?.scrollIntoView({ behavior: 'smooth' })
   }, 100)
+}
+
+const handleSaved = () => {
+  showInspecao.value = false
+  militarSelecionado.value = null
+  handleSearch()
 }
 
 const abrirResumo = (m) => {
