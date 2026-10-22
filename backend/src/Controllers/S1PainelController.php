@@ -361,12 +361,12 @@ class S1PainelController {
                 $numRaw = trim($cols[$idxMap['numero']] ?? '');
                 $numDig = preg_replace('/\D/', '', $numRaw);
                 $numero = ($numDig !== '') ? (int)$numDig : null;
-                $qmg    = trim($cols[$idxMap['qmg']] ?? '');
-                $gpt    = trim($cols[$idxMap['grupamento']] ?? '');
-                $sit    = trim($cols[$idxMap['situacao_atual']] ?? '') ?: 'Em Forma';
+                $qmg    = mb_substr(trim($cols[$idxMap['qmg']] ?? ''), 0, 50, 'UTF-8');
+                $gpt    = mb_substr(trim($cols[$idxMap['grupamento']] ?? ''), 0, 60, 'UTF-8');
+                $sit    = mb_substr(trim($cols[$idxMap['situacao_atual']] ?? '') ?: 'Em Forma', 0, 60, 'UTF-8');
                 $fracao = $this->normalizarSubunidade(trim($cols[$idxMap['subunidade']] ?? ''));
-                $secao  = trim($cols[$idxMap['secao']] ?? '');
-                $funcao = trim($cols[$idxMap['funcao']] ?? '');
+                $secao  = mb_substr(trim($cols[$idxMap['secao']] ?? ''), 0, 100, 'UTF-8');
+                $funcao = mb_substr(trim($cols[$idxMap['funcao']] ?? ''), 0, 150, 'UTF-8');
 
                 $chaveNomeExata = $this->normalizarChaveNome($nomeCompleto, false);
                 $chaveNomeLimpa = $this->normalizarChaveNome($nomeCompleto, true);

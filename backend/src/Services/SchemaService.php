@@ -53,6 +53,11 @@ class SchemaService {
             try {
                 $pdo->exec("ALTER TABLE tb_militares MODIFY COLUMN cpf VARCHAR(20) NULL DEFAULT NULL");
                 $pdo->exec("UPDATE tb_militares SET cpf = NULL WHERE cpf = '' OR TRIM(cpf) = ''");
+                $pdo->exec("ALTER TABLE tb_militares MODIFY COLUMN secao VARCHAR(100) NULL DEFAULT NULL");
+                $pdo->exec("ALTER TABLE tb_militares MODIFY COLUMN subunidade VARCHAR(50) NULL DEFAULT NULL");
+                $pdo->exec("ALTER TABLE tb_militares MODIFY COLUMN pelotao VARCHAR(60) NULL DEFAULT NULL");
+                $pdo->exec("ALTER TABLE tb_militares MODIFY COLUMN funcao VARCHAR(150) NULL DEFAULT NULL");
+                $pdo->exec("ALTER TABLE tb_militares MODIFY COLUMN grupamento VARCHAR(60) NULL DEFAULT NULL");
             } catch (\Exception $e) {}
 
             // 1. Novas colunas em tb_militares
