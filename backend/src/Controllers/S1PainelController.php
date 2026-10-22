@@ -358,7 +358,9 @@ class S1PainelController {
                 if ($nomeCompleto === '' || $nomeCompleto === 'NOME COMPLETO') continue;
 
                 $posto  = $this->normalizarPosto(trim($cols[$idxMap['posto_grad']] ?? ''));
-                $numero = trim($cols[$idxMap['numero']] ?? '');
+                $numRaw = trim($cols[$idxMap['numero']] ?? '');
+                $numDig = preg_replace('/\D/', '', $numRaw);
+                $numero = ($numDig !== '') ? (int)$numDig : null;
                 $qmg    = trim($cols[$idxMap['qmg']] ?? '');
                 $gpt    = trim($cols[$idxMap['grupamento']] ?? '');
                 $sit    = trim($cols[$idxMap['situacao_atual']] ?? '') ?: 'Em Forma';
@@ -368,7 +370,7 @@ class S1PainelController {
 
                 $chaveNomeExata = $this->normalizarChaveNome($nomeCompleto, false);
                 $chaveNomeLimpa = $this->normalizarChaveNome($nomeCompleto, true);
-                $chaveGN        = $this->normalizarChaveNome($posto . '_' . $numero . '_' . $nomeGuerra, false);
+                $chaveGN        = $this->normalizarChaveNome($posto . '_' . ($numero ?? '') . '_' . $nomeGuerra, false);
 
                 $militarExistente = $mapaPorNomeExato[$chaveNomeExata] ?? ($mapaPorNomeLimpo[$chaveNomeLimpa] ?? null);
 
@@ -380,7 +382,7 @@ class S1PainelController {
                     }
                 }
 
-                if (!$militarExistente && $posto !== '' && $numero !== '') {
+                if (!$militarExistente && $posto !== '' && $numero !== null) {
                     $pnKey = $posto . '_' . $numero;
                     if (isset($mapaPorPostoNumero[$pnKey]) && count($mapaPorPostoNumero[$pnKey]) === 1) {
                         $militarExistente = $mapaPorPostoNumero[$pnKey][0];
@@ -392,8 +394,9 @@ class S1PainelController {
                 }
 
                 if ($militarExistente) {
+                    $numExist   = (!empty($militarExistente['numero']) && is_numeric($militarExistente['numero'])) ? (int)$militarExistente['numero'] : null;
                     $novoPosto  = $posto !== '' ? $posto : $militarExistente['posto_grad'];
-                    $novoNum    = $numero !== '' ? $numero : $militarExistente['numero'];
+                    $novoNum    = $numero !== null ? $numero : $numExist;
                     $novoQmg    = $qmg !== '' ? $qmg : $militarExistente['qmg'];
                     $novoGpt    = $gpt !== '' ? $gpt : $militarExistente['grupamento'];
                     $novoGuerra = $nomeGuerra !== '' ? $nomeGuerra : $militarExistente['nome_guerra'];
@@ -406,7 +409,7 @@ class S1PainelController {
                     $mudouSit = ($novaSit !== '' && $novaSit !== ($militarExistente['situacao_atual'] ?: 'Em Forma'));
                     $mudouOutro = (
                         $novoPosto !== ($militarExistente['posto_grad'] ?? '') ||
-                        (string)$novoNum !== (string)($militarExistente['numero'] ?? '') ||
+                        $novoNum !== $numExist ||
                         $novoQmg !== ($militarExistente['qmg'] ?? '') ||
                         $novoGpt !== ($militarExistente['grupamento'] ?? '') ||
                         $novoGuerra !== ($militarExistente['nome_guerra'] ?? '') ||
@@ -417,7 +420,7 @@ class S1PainelController {
                     if ($mudouSu || $mudouSit || $mudouOutro) {
                         $stmtUpdate->execute([
                             ':posto_grad'      => $novoPosto,
-                            ':numero'          => $novoNum ?: null,
+                            ':numero'          => $novoNum,
                             ':qmg'             => $novoQmg ?: null,
                             ':grupamento'      => $novoGpt ?: null,
                             ':nome_guerra'     => $novoGuerra,

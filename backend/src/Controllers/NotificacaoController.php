@@ -74,7 +74,8 @@ class NotificacaoController {
             }
             $cpfVal = !empty($dadosMilitar['cpf']) ? trim((string)$dadosMilitar['cpf']) : null;
             $postoGrad = trim($dadosMilitar['posto_grad'] ?? '') ?: 'Sd EV';
-            $numeroVal = !empty($dadosMilitar['numero']) ? trim((string)$dadosMilitar['numero']) : null;
+            $numDigitos = !empty($dadosMilitar['numero']) ? preg_replace('/\D/', '', (string)$dadosMilitar['numero']) : '';
+            $numeroVal = ($numDigitos !== '') ? (int)$numDigitos : null;
 
             // 1. Verifica se já não foi cadastrado antes (por nome exato, ou por posto + nome de guerra se único)
             $stmtCheck = $pdo->prepare("SELECT id FROM tb_militares WHERE UPPER(TRIM(nome_completo)) = ?");
