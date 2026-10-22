@@ -34,6 +34,18 @@ const router = createRouter({
           component: () => import('../views/MilitaresView.vue')
         },
         {
+          path: 'painel-s1',
+          name: 'painel_s1',
+          component: () => import('../views/PainelS1View.vue'),
+          meta: { requiresAuth: true, requiresS1: true }
+        },
+        {
+          path: 'meu-painel',
+          name: 'meu_painel',
+          component: () => import('../views/MeuPainelView.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
           path: 'frota',
           name: 'frota',
           component: () => import('../views/FrotaView.vue')
@@ -41,7 +53,8 @@ const router = createRouter({
         {
           path: 'admin',
           name: 'admin',
-          component: () => import('../views/AdminView.vue')
+          component: () => import('../views/AdminView.vue'),
+          meta: { requiresAuth: true, requiresAdmin: true }
         },
         {
           path: 'arranchamento-painel',
@@ -69,11 +82,14 @@ router.beforeEach((to, from, next) => {
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next('/login')
+  } else if (authStore.isAuthenticated && authStore.isMilitar && to.path !== '/meu-painel' && to.path !== '/consulta' && to.path !== '/arranchamento') {
+    next('/meu-painel')
   } else if (to.meta.requiresAdmin && !authStore.isAdmin) {
-    // Redireciona usuários sem permissão de admin para o dashboard
-    next('/dashboard')
+    next(authStore.isMilitar ? '/meu-painel' : '/dashboard')
+  } else if (to.meta.requiresS1 && !authStore.canViewS1Panel) {
+    next(authStore.isMilitar ? '/meu-painel' : '/dashboard')
   } else if (to.path === '/login' && authStore.isAuthenticated) {
-    next('/dashboard')
+    next(authStore.isMilitar ? '/meu-painel' : '/dashboard')
   } else {
     next()
   }

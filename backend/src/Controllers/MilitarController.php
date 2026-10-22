@@ -4,19 +4,21 @@ namespace Sismil\Controllers;
 use Sismil\Core\Request;
 use Sismil\Core\Response;
 use Sismil\Services\MilitarService;
+use Sismil\Services\NotificacaoService;
+use Sismil\Services\SchemaService;
 use Sismil\Repositories\MilitarRepository;
 use Sismil\Repositories\VeiculoRepository;
 use Sismil\Repositories\AlteracaoRepository;
 use Sismil\Core\Database;
-use Sismil\Core\AuditLogger;
 
 class MilitarController {
     
     public function search(Request $request) {
         $isPublic = $request->getQuery('publico') == '1';
         if (!$isPublic) {
-            require_login();
+            require_login(['admin', 'sargenteacao', 's2', 'enc_mat', 'user']);
         }
+        SchemaService::ensureSchema();
         
         $filtros = $request->getQuery();
         if (empty($filtros)) {
@@ -39,13 +41,20 @@ class MilitarController {
         }
     }
 
-
     public function getById(Request $request) {
         require_login();
+        SchemaService::ensureSchema();
         $id = (int)$request->getQuery('id');
         
         if ($id <= 0) {
             Response::error('ID inválido ou não informado.', 400);
+        }
+
+        if (isset($_SESSION['usuario_role']) && $_SESSION['usuario_role'] === 'militar') {
+            $meuId = (int)($_SESSION['militar_id'] ?? 0);
+            if ($id !== $meuId) {
+                Response::error('Acesso permitido apenas à sua própria ficha.', 403);
+            }
         }
         
         try {
@@ -74,6 +83,7 @@ class MilitarController {
     public function save(Request $request) {
         require_login(['admin', 'sargenteacao']);
         validate_csrf();
+        SchemaService::ensureSchema();
         
         try {
             $service = new MilitarService();
@@ -145,11 +155,17 @@ class MilitarController {
         }
     }
     
-    // Antigo get_historico.php
     public function getHistorico(Request $request) {
         require_login();
         $id = (int)$request->getQuery('id');
         if (!$id) Response::error("ID não informado", 400);
+
+        if (isset($_SESSION['usuario_role']) && $_SESSION['usuario_role'] === 'militar') {
+            $meuId = (int)($_SESSION['militar_id'] ?? 0);
+            if ($id !== $meuId) {
+                Response::error("Acesso negado.", 403);
+            }
+        }
         
         try {
             $repo = new AlteracaoRepository();
@@ -187,6 +203,7 @@ class MilitarController {
             Response::error('Erro ao reativar militar.', 500);
         }
     }
+
     public function saveAlteracao(Request $request) {
         require_login(['admin', 'sargenteacao']);
         validate_csrf();
@@ -202,7 +219,6 @@ class MilitarController {
                     __DIR__ . '/../../../uploads/s1/',
                     's1_'
                 );
-                // Salvar apenas "s1/nome_do_arquivo.ext"
                 if ($arquivoPath) {
                     $arquivoPath = 's1/' . $arquivoPath;
                 }
@@ -210,6 +226,13 @@ class MilitarController {
 
             $repo = new AlteracaoRepository();
             $repo->save($_POST, $arquivoPath);
+
+            $militarId = (int)($_POST['s1_militar_id'] ?? 0);
+            if ($militarId > 0) {
+                $notifService = new NotificacaoService();
+                $notifService->verificarMetaFoPositivoMilitar($militarId);
+            }
+
             \Sismil\Services\AuditLogger::log('SAVE_ALTERACAO', 'Alteração de histórico salva. Tipo: ' . ($_POST['s1_tipo'] ?? ''));
             Response::json(null, 'Alteração salva com sucesso.');
         } catch (\Exception $e) {

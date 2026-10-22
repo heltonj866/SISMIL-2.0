@@ -11,6 +11,7 @@ class MilitarService {
     private UploadService $uploadService;
 
     public function __construct() {
+        SchemaService::ensureSchema();
         $this->repo = new MilitarRepository();
         $this->alteracaoRepo = new AlteracaoRepository();
         $this->uploadService = new UploadService();
@@ -27,6 +28,9 @@ class MilitarService {
             ':subunidade' => !empty($dados['subunidade']) ? $dados['subunidade'] : null,
             ':pelotao' => !empty($dados['pelotao']) ? $dados['pelotao'] : null,
             ':secao' => !empty($dados['secao']) ? $dados['secao'] : null,
+            ':grupamento' => !empty($dados['grupamento']) ? trim($dados['grupamento']) : null,
+            ':funcao' => !empty($dados['funcao']) ? trim($dados['funcao']) : null,
+            ':situacao_atual' => !empty($dados['situacao_atual']) ? trim($dados['situacao_atual']) : 'Em Forma',
             ':nome_completo' => strtoupper(trim($dados['nome_completo'] ?? '')),
             ':nome_pai' => strtoupper(trim($dados['nome_pai'] ?? '')),
             ':nome_mae' => strtoupper(trim($dados['nome_mae'] ?? '')),
@@ -51,16 +55,23 @@ class MilitarService {
             ':validade_cnh' => !empty($dados['validade_cnh']) ? $dados['validade_cnh'] : null,
         ];
 
-        // Se for update, pegamos os dados atuais para não sobrescrever arquivos se não enviados
         $militarExistente = null;
         if ($id > 0) {
             $militarExistente = $this->repo->findById($id);
             if (!$militarExistente) {
                 throw new Exception("Militar não encontrado para atualização.");
             }
+            if (empty($dados['situacao_atual']) && !empty($militarExistente['situacao_atual'])) {
+                $parametros[':situacao_atual'] = $militarExistente['situacao_atual'];
+            }
+            if (!isset($dados['grupamento']) && isset($militarExistente['grupamento'])) {
+                $parametros[':grupamento'] = $militarExistente['grupamento'];
+            }
+            if (!isset($dados['funcao']) && isset($militarExistente['funcao'])) {
+                $parametros[':funcao'] = $militarExistente['funcao'];
+            }
         }
 
-        // Validação preventiva de CPF e Identidade duplicados em outro cadastro
         $pdo = \Sismil\Core\Database::getInstance();
         if (!empty($parametros[':cpf'])) {
             $stmtCpf = $pdo->prepare("SELECT id, nome_guerra, posto_grad FROM tb_militares WHERE cpf = ? AND id != ?");
@@ -79,7 +90,6 @@ class MilitarService {
 
         $dir_uploads = __DIR__ . '/../../../uploads/';
         
-        // Upload da Foto
         $foto = $this->uploadService->validarEProcessarUpload(
             'foto', 
             ['jpg','jpeg','png'], 
@@ -89,7 +99,6 @@ class MilitarService {
         );
         $parametros[':foto'] = $foto ?? ($militarExistente['foto_path'] ?? null);
 
-        // Upload da CNH
         $pdf_cnh = $this->uploadService->validarEProcessarUpload(
             'pdf_cnh', 
             ['pdf'], 
@@ -99,7 +108,6 @@ class MilitarService {
         );
         $parametros[':pdf_cnh'] = $pdf_cnh ?? ($militarExistente['pdf_habilitacao'] ?? null);
         
-        // Upload da Ficha de Nada Consta (permitido também na edição normal)
         $pdf_nada_consta = $this->uploadService->validarEProcessarUpload(
             'pdf_nada_consta',
             ['pdf'],
@@ -113,7 +121,6 @@ class MilitarService {
             $parametros[':id'] = $id;
             $this->repo->update($parametros);
             
-            // Registra histórico S1
             $this->alteracaoRepo->registrar(
                 $id, 
                 $_SESSION['usuario_id'], 
@@ -122,20 +129,42 @@ class MilitarService {
                 'ATUALIZACAO_CADASTRAL', 
                 "Ficha do militar atualizada pelo S1."
             );
-            return $id;
+            $finalId = $id;
         } else {
-            $novoId = $this->repo->insert($parametros);
+            $finalId = $this->repo->insert($parametros);
             
             $this->alteracaoRepo->registrar(
-                $novoId, 
+                $finalId, 
                 $_SESSION['usuario_id'], 
                 date('Y-m-d'), 
                 'S1', 
                 'INCLUSAO_SISMIL', 
                 "Militar cadastrado no sistema."
             );
-            return $novoId;
         }
+
+        // Provisiona/atualiza automaticamente o login do militar (role 'militar') quando possuir CPF
+        if (!empty($parametros[':cpf'])) {
+            try {
+                $stmtU = $pdo->prepare("SELECT id FROM tb_usuarios WHERE militar_id = ? OR identidade = ? LIMIT 1");
+                $stmtU->execute([$finalId, $parametros[':cpf']]);
+                if (!$stmtU->fetchColumn()) {
+                    $stmtInsU = $pdo->prepare("
+                        INSERT IGNORE INTO tb_usuarios (identidade, senha_hash, role, ativo, nome, posto_grad, subunidade, militar_id)
+                        VALUES (?, '', 'militar', 1, ?, ?, ?, ?)
+                    ");
+                    $stmtInsU->execute([
+                        $parametros[':cpf'],
+                        $parametros[':nome_guerra'],
+                        $parametros[':posto_grad'],
+                        $parametros[':subunidade'],
+                        $finalId
+                    ]);
+                }
+            } catch (\Exception $e) {}
+        }
+
+        return $finalId;
     }
 
     public function desligarMilitar(int $id, string $motivo, string $dataDesligamento): void {
@@ -155,6 +184,12 @@ class MilitarService {
         );
 
         $this->repo->updateStatus($id, 0, $pdfNadaConsta);
+
+        // Desativa login do militar desligado caso seja apenas perfil 'militar'
+        try {
+            $pdo = \Sismil\Core\Database::getInstance();
+            $pdo->prepare("UPDATE tb_usuarios SET ativo = 0 WHERE militar_id = ? AND role = 'militar'")->execute([$id]);
+        } catch (\Exception $e) {}
 
         $descricao = "Desligamento: {$motivo}";
         if ($pdfNadaConsta) {

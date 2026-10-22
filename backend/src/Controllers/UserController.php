@@ -5,6 +5,7 @@ use Sismil\Core\Request;
 use Sismil\Core\Response;
 use Sismil\Core\Database;
 use Sismil\Services\AuditLogger;
+use Sismil\Services\SchemaService;
 use Sismil\Repositories\UsuarioRepository;
 use PDO;
 use Exception;
@@ -14,6 +15,7 @@ class UserController {
     public function get(Request $request) {
         require_login(['admin']);
         try {
+            SchemaService::ensureSchema();
             $repo = new UsuarioRepository();
             $users = $repo->findAllSecure();
             Response::json(['status' => 'sucesso', 'data' => $users]);
@@ -80,6 +82,7 @@ class UserController {
         $id = (int)($dados['edit_id'] ?? 0);
         $role = trim($dados['new_user_role'] ?? '');
         $pass = trim($dados['new_user_pass'] ?? '');
+        $resetPrimeiroAcesso = !empty($dados['resetar_primeiro_acesso']);
         $ativo = (int)($dados['ativo'] ?? 1);
         
         $militarId = !empty($dados['militar_id']) ? (int)$dados['militar_id'] : null;
@@ -100,7 +103,10 @@ class UserController {
         try {
             $pdo = Database::getInstance();
             
-            if (!empty($pass)) {
+            if ($resetPrimeiroAcesso) {
+                $stmt = $pdo->prepare("UPDATE tb_usuarios SET role=?, senha_hash='', ativo=?, nome=?, posto_grad=?, subunidade=?, militar_id=? WHERE id=?");
+                $stmt->execute([$role, $ativo, $nome, $posto, $sub, $militarId, $id]);
+            } elseif (!empty($pass)) {
                 $hash = password_hash($pass, PASSWORD_DEFAULT);
                 $stmt = $pdo->prepare("UPDATE tb_usuarios SET role=?, senha_hash=?, ativo=?, nome=?, posto_grad=?, subunidade=?, militar_id=? WHERE id=?");
                 $stmt->execute([$role, $hash, $ativo, $nome, $posto, $sub, $militarId, $id]);

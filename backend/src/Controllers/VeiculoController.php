@@ -4,6 +4,7 @@ namespace Sismil\Controllers;
 use Sismil\Core\Request;
 use Sismil\Core\Response;
 use Sismil\Services\VeiculoService;
+use Sismil\Services\NotificacaoService;
 use Sismil\Repositories\VeiculoRepository;
 
 class VeiculoController {
@@ -12,6 +13,13 @@ class VeiculoController {
         require_login();
         $id = (int)$request->getQuery('militar_id');
         if (!$id) Response::error("ID não informado", 400);
+
+        if (isset($_SESSION['usuario_role']) && $_SESSION['usuario_role'] === 'militar') {
+            $meuId = (int)($_SESSION['militar_id'] ?? 0);
+            if ($id !== $meuId) {
+                Response::error("Acesso negado.", 403);
+            }
+        }
         
         try {
             $repo = new VeiculoRepository();
@@ -23,7 +31,6 @@ class VeiculoController {
         }
     }
 
-    
     public function save(Request $request) {
         require_login(['admin', 's2', 'sargenteacao']);
         validate_csrf();
@@ -50,10 +57,13 @@ class VeiculoController {
         try {
             $id = (int)$request->getBody('id');
             $homologado = (int)$request->getBody('homologado');
-            $obs = $request->getBody('observacao_s2', '');
+            $obs = (string)$request->getBody('observacao_s2', '');
             
             $service = new VeiculoService();
             $service->homologarVeiculo($id, $homologado, $obs);
+
+            $notifService = new NotificacaoService();
+            $notifService->notificarVeiculoAvaliado($id, $homologado, $obs);
             
             \Sismil\Services\AuditLogger::log('VEICULO_HOMOLOGACAO', 'Veículo ID ' . $id . ' marcado como ' . ($homologado ? 'HOMOLOGADO' : 'NÃO homologado') . '.');
             Response::json(null, "Status do veículo atualizado com sucesso.");

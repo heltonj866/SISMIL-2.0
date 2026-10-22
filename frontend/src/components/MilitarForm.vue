@@ -64,6 +64,20 @@
               <label>Seção</label>
               <input type="text" v-model="form.secao" class="input-modern" :disabled="isReadonly">
             </div>
+            <div class="input-group">
+              <label>Grupamento (GPT)</label>
+              <input type="text" v-model="form.grupamento" class="input-modern" :disabled="isReadonly" placeholder="Ex: Alfa 2024 / Bravo 2021">
+            </div>
+            <div class="input-group">
+              <label>Função</label>
+              <input type="text" v-model="form.funcao" class="input-modern" :disabled="isReadonly" placeholder="Ex: Aux S1 / Motorista">
+            </div>
+            <div class="input-group">
+              <label>Situação Atual (Livro Digital)</label>
+              <select v-model="form.situacao_atual" class="input-modern" :disabled="isReadonly">
+                <option v-for="sit in situacoesOficiais" :key="sit" :value="sit">{{ sit }}</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -412,6 +426,14 @@ const normDate = (v) => (!v || v === '0000-00-00') ? '' : String(v).substring(0,
 
 const postos = ["Cel", "TC", "Maj", "Cap", "1º Ten", "2º Ten", "Asp", "S Ten", "1º Sgt", "2º Sgt", "3º Sgt", "Alu", "Cb", "Sd EP", "Sd EV", "SC"]
 
+const situacoesOficiais = [
+  'Em Forma', 'ApoioFormatura', 'Assistência', 'CRA', 'Missão OM',
+  '(2) Ch Vtr', '(2) Missão Ext', '(2) Viagem SV', 'Arejamento', 'Convalescença',
+  'Curso/Estágio/Concurso', 'CS', 'Disp ADM', 'Disp Med', 'Disp Recomp',
+  'Férias', 'Instalação', 'Lic Pat/Mat', 'LTSP/LTIP', 'Luto',
+  'Núpcias', 'Op Esperantina', 'Op Jacinto', 'OpCajari', 'Serviço', 'ESV', 'SSV'
+]
+
 const form = ref({
   id: props.militar?.id || '',
   id_militar: props.militar?.id || '',
@@ -422,6 +444,9 @@ const form = ref({
   subunidade: props.militar?.subunidade || '',
   pelotao: props.militar?.pelotao || '',
   secao: props.militar?.secao || '',
+  grupamento: props.militar?.grupamento || '',
+  funcao: props.militar?.funcao || '',
+  situacao_atual: props.militar?.situacao_atual || 'Em Forma',
   nome_completo: props.militar?.nome_completo || '',
   nome_pai: props.militar?.nome_pai || '',
   nome_mae: props.militar?.nome_mae || '',
@@ -522,6 +547,9 @@ const fetchDadosCompletos = async () => {
       form.value.subunidade = d.subunidade || ''
       form.value.pelotao = d.pelotao || ''
       form.value.secao = d.secao || ''
+      form.value.grupamento = d.grupamento || ''
+      form.value.funcao = d.funcao || ''
+      form.value.situacao_atual = d.situacao_atual || 'Em Forma'
       form.value.nome_completo = d.nome_completo || ''
       form.value.nome_pai = d.nome_pai || ''
       form.value.nome_mae = d.nome_mae || ''

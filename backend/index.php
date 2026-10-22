@@ -14,6 +14,8 @@ require_once __DIR__ . '/src/Core/Router.php';
 require_once __DIR__ . '/src/Core/Database.php';
 
 require_once __DIR__ . '/src/Services/AuditLogger.php';
+require_once __DIR__ . '/src/Services/SchemaService.php';
+require_once __DIR__ . '/src/Services/NotificacaoService.php';
 require_once __DIR__ . '/src/Services/UploadService.php';
 require_once __DIR__ . '/src/Services/MilitarService.php';
 require_once __DIR__ . '/src/Services/VeiculoService.php';
@@ -23,6 +25,7 @@ require_once __DIR__ . '/src/Repositories/MilitarRepository.php';
 require_once __DIR__ . '/src/Repositories/VeiculoRepository.php';
 require_once __DIR__ . '/src/Repositories/ArranchamentoRepository.php';
 require_once __DIR__ . '/src/Repositories/AlteracaoRepository.php';
+require_once __DIR__ . '/src/Repositories/UsuarioRepository.php';
 
 require_once __DIR__ . '/src/Controllers/AuthController.php';
 require_once __DIR__ . '/src/Controllers/MilitarController.php';
@@ -31,6 +34,9 @@ require_once __DIR__ . '/src/Controllers/ArranchamentoController.php';
 require_once __DIR__ . '/src/Controllers/DashboardController.php';
 require_once __DIR__ . '/src/Controllers/UserController.php';
 require_once __DIR__ . '/src/Controllers/AuditController.php';
+require_once __DIR__ . '/src/Controllers/NotificacaoController.php';
+require_once __DIR__ . '/src/Controllers/S1PainelController.php';
+require_once __DIR__ . '/src/Controllers/PortalMilitarController.php';
 
 use Sismil\Core\Request;
 use Sismil\Core\Router;
@@ -43,9 +49,15 @@ use Sismil\Controllers\ArranchamentoController;
 use Sismil\Controllers\DashboardController;
 use Sismil\Controllers\UserController;
 use Sismil\Controllers\AuditController;
+use Sismil\Controllers\NotificacaoController;
+use Sismil\Controllers\S1PainelController;
+use Sismil\Controllers\PortalMilitarController;
 
 $request = new Request();
 $router = new Router();
+
+// Garante migrações e tabelas essenciais (idempotente)
+\Sismil\Services\SchemaService::ensureSchema();
 
 // ==========================================
 // REGISTRO DE ROTAS
@@ -53,6 +65,7 @@ $router = new Router();
 
 // --- AUTH ---
 $router->post('/api/auth/login', [AuthController::class, 'login']);
+$router->post('/api/auth/primeiro-acesso', [AuthController::class, 'primeiroAcesso']);
 $router->post('/api/auth/logout', [AuthController::class, 'logout']);
 $router->get('/api/auth/check', [AuthController::class, 'check']);
 
@@ -91,6 +104,21 @@ $router->post('/api/user/delete', [UserController::class, 'delete']);
 // --- AUDITORIA (somente admin) ---
 $router->get('/api/auditoria/list', [AuditController::class, 'list']);
 $router->get('/api/auditoria/acoes', [AuditController::class, 'acoes']);
+
+// --- NOTIFICAÇÕES (admin / sargenteação) ---
+$router->get('/api/notificacoes/list', [NotificacaoController::class, 'list']);
+$router->post('/api/notificacoes/ler', [NotificacaoController::class, 'marcarLida']);
+$router->post('/api/notificacoes/efetivar-precadastro', [NotificacaoController::class, 'efetivarPreCadastro']);
+
+// --- PAINEL S1 / PLANILHA GERAL (admin / sargenteação) ---
+$router->get('/api/s1/resumo', [S1PainelController::class, 'resumo']);
+$router->post('/api/s1/situacao', [S1PainelController::class, 'registrarSituacaoS1']);
+$router->post('/api/s1/planilha/sync', [S1PainelController::class, 'sincronizarPlanilha']);
+
+// --- PORTAL INDIVIDUAL DO MILITAR ---
+$router->get('/api/portal/me', [PortalMilitarController::class, 'meuPerfil']);
+$router->post('/api/portal/dados-basicos', [PortalMilitarController::class, 'salvarDadosBasicos']);
+$router->post('/api/portal/apresentacao', [PortalMilitarController::class, 'registrarApresentacao']);
 
 // ==========================================
 // DISPATCH

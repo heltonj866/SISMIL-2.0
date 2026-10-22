@@ -15,12 +15,6 @@ class MilitarRepository {
         $this->db = Database::getInstance();
     }
 
-    /**
-     * Busca um militar específico pelo ID.
-     *
-     * @param int $id ID do militar
-     * @return array|null Retorna os dados do militar ou null se não encontrado
-     */
     public function findById(int $id): ?array {
         $stmt = $this->db->prepare("SELECT * FROM tb_militares WHERE id = ?");
         $stmt->execute([$id]);
@@ -28,12 +22,6 @@ class MilitarRepository {
         return $result ?: null;
     }
 
-    /**
-     * Busca pública segura por termo (usada na portaria/S2).
-     *
-     * @param string $query Termo buscado
-     * @return array
-     */
     public function searchPublic(string $query): array {
         $sql = "SELECT DISTINCT m.id, m.posto_grad, m.nome_guerra, m.nome_completo,
                     m.subunidade, m.secao, m.pelotao, m.celular_princ,
@@ -67,7 +55,6 @@ class MilitarRepository {
             $sv = $this->db->prepare("SELECT placa, modelo, cor, homologado FROM tb_veiculos WHERE militar_id = ? ORDER BY homologado DESC, id ASC");
             $sv->execute([$m['id']]);
             $veiculos = $sv->fetchAll(PDO::FETCH_ASSOC);
-            // Mantém compatibilidade: 'veiculo' = primeiro veículo (ou null), 'veiculos' = todos
             $m['veiculo']   = !empty($veiculos) ? $veiculos[0] : null;
             $m['veiculos']  = $veiculos;
         }
@@ -75,12 +62,6 @@ class MilitarRepository {
         return $militares;
     }
 
-    /**
-     * Realiza a busca complexa (usada no Dashboard Interno).
-     * 
-     * @param array $filtros Array contendo os parâmetros de filtro.
-     * @return array
-     */
     public function searchComplex(array $filtros): array {
         $statusFilter = !empty($filtros['inativos']) ? "status_ativo = 0" : "status_ativo = 1";
         $sql = "SELECT * FROM tb_militares WHERE $statusFilter";
@@ -116,6 +97,16 @@ class MilitarRepository {
             if (!empty($subunidade) && $subunidade !== 'Todas') {
                 $sql .= " AND subunidade = ?";
                 $params[] = $subunidade;
+            }
+
+            $situacao = $filtros['situacao'] ?? '';
+            if (!empty($situacao) && $situacao !== 'Todas') {
+                if ($situacao === 'Em Forma') {
+                    $sql .= " AND (situacao_atual = 'Em Forma' OR situacao_atual IS NULL OR situacao_atual = '')";
+                } else {
+                    $sql .= " AND situacao_atual = ?";
+                    $params[] = $situacao;
+                }
             }
 
             if (!empty($filtros['sem_foto'])) {
@@ -203,7 +194,6 @@ class MilitarRepository {
             elseif ($filtro === 'PRO') $sql .= " AND (cat_cnh LIKE '%C%' OR cat_cnh LIKE '%D%' OR cat_cnh LIKE '%E%' OR cat_cnh LIKE '%AD%' OR cat_cnh LIKE '%AE%')";
         }
 
-        // Ordem hierárquica (mesmo critério da busca): posto/graduação, antiguidade (data de praça), número
         $sql .= " ORDER BY
             CASE posto_grad
                 WHEN 'Gen Ex' THEN 1 WHEN 'Gen Div' THEN 2 WHEN 'Gen Bda' THEN 3 WHEN 'Cel' THEN 4
@@ -220,14 +210,16 @@ class MilitarRepository {
 
     public function insert(array $dados): int {
         $sql = "INSERT INTO tb_militares (
-            cpf, posto_grad, numero, nome_guerra, subunidade, pelotao, secao, nome_completo,
-            nome_pai, nome_mae, qmg, dt_nascimento, tipo_sanguineo, dt_praca, idt_militar,
+            cpf, posto_grad, numero, nome_guerra, subunidade, pelotao, secao,
+            grupamento, funcao, situacao_atual,
+            nome_completo, nome_pai, nome_mae, qmg, dt_nascimento, tipo_sanguineo, dt_praca, idt_militar,
             email, celular_princ, celular_sec, nome_resp, tel_resp, tel_emergencia,
             cep, endereco, num_residencia, bairro, cidade, estado,
             cat_cnh, validade_cnh, pdf_habilitacao, foto_path, pdf_nada_consta, status_ativo
         ) VALUES (
-            :cpf, :posto_grad, :numero, :nome_guerra, :subunidade, :pelotao, :secao, :nome_completo,
-            :nome_pai, :nome_mae, :qmg, :dt_nascimento, :tipo_sanguineo, :dt_praca, :idt_militar,
+            :cpf, :posto_grad, :numero, :nome_guerra, :subunidade, :pelotao, :secao,
+            :grupamento, :funcao, :situacao_atual,
+            :nome_completo, :nome_pai, :nome_mae, :qmg, :dt_nascimento, :tipo_sanguineo, :dt_praca, :idt_militar,
             :email, :celular_princ, :celular_sec, :nome_resp, :tel_resp, :tel_emergencia,
             :cep, :endereco, :num_residencia, :bairro, :cidade, :estado,
             :cat_cnh, :validade_cnh, :pdf_cnh, :foto, :pdf_nada_consta, 1
@@ -242,7 +234,6 @@ class MilitarRepository {
         foreach ($dados as $key => $val) {
             if ($key === ':id') continue;
             $colName = ltrim($key, ':');
-            // Mapeamentos específicos do banco vs nome do parâmetro
             if ($colName === 'foto') $colName = 'foto_path';
             if ($colName === 'pdf_cnh') $colName = 'pdf_habilitacao';
 
@@ -267,5 +258,12 @@ class MilitarRepository {
         $params[] = $id;
         
         $this->db->prepare($sql)->execute($params);
+    }
+
+    public function delete(int $id): void {
+        $this->db->prepare("DELETE FROM tb_veiculos WHERE militar_id = ?")->execute([$id]);
+        $this->db->prepare("DELETE FROM tb_alteracoes WHERE militar_id = ?")->execute([$id]);
+        $this->db->prepare("DELETE FROM tb_usuarios WHERE militar_id = ? AND role = 'militar'")->execute([$id]);
+        $this->db->prepare("DELETE FROM tb_militares WHERE id = ?")->execute([$id]);
     }
 }

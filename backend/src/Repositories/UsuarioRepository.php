@@ -29,6 +29,7 @@ class UsuarioRepository {
                 u.role, 
                 u.ativo, 
                 u.militar_id,
+                CASE WHEN u.senha_hash IS NOT NULL AND u.senha_hash != '' THEN 1 ELSE 0 END as possui_senha,
                 COALESCE(m.subunidade, u.subunidade) as subunidade, 
                 COALESCE(m.nome_guerra, u.nome) as nome, 
                 COALESCE(m.posto_grad, u.posto_grad) as posto_grad

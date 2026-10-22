@@ -42,6 +42,7 @@
               <td>
                 <span class="status-dot" :class="u.ativo == 1 ? 'dot-active' : 'dot-blocked'"></span>
                 {{ u.ativo == 1 ? 'Ativo' : 'Bloqueado' }}
+                <small v-if="u.possui_senha == 0" class="d-block text-muted">Aguardando 1º Acesso</small>
               </td>
               <td class="td-actions">
                 <button class="abtn abtn-edit" @click="openEdit(u)" title="Editar">
@@ -96,12 +97,20 @@
             <div class="field">
               <label>Nível de Acesso</label>
               <select v-model="form.role" class="input-modern">
+                <option value="militar">Militar (Portal Individual)</option>
                 <option value="user">Usuário Comum (Consulta)</option>
                 <option value="sargenteacao">Sargenteação / S1</option>
                 <option value="s2">Inteligência / S2</option>
                 <option value="enc_mat">Encarregado de Material (Rancho)</option>
                 <option value="admin">Administrador</option>
               </select>
+            </div>
+
+            <div class="field" v-if="isEditing">
+              <label style="display:flex; align-items:center; gap:0.5rem; text-transform:none; cursor:pointer;">
+                <input type="checkbox" v-model="form.resetar_primeiro_acesso" />
+                <span>Resetar para Primeiro Acesso (permite ao militar cadastrar nova senha no login)</span>
+              </label>
             </div>
 
             <template v-if="!form.militar_id">
@@ -200,11 +209,11 @@ watch(() => form.value.militar_id, (novoId) => {
 })
 
 const roleLabel = (r) => {
-  const map = { admin: 'Administrador', sargenteacao: 'Sargenteação', s2: 'S2 / Inteligência', enc_mat: 'Enc. Material', user: 'Usuário' }
+  const map = { admin: 'Administrador', sargenteacao: 'Sargenteação', s2: 'S2 / Inteligência', enc_mat: 'Enc. Material', user: 'Usuário', militar: 'Militar' }
   return map[r] || r
 }
 const roleIcon = (r) => {
-  const map = { admin: 'fas fa-shield-alt', sargenteacao: 'fas fa-star', s2: 'fas fa-car', enc_mat: 'fas fa-utensils', user: 'fas fa-user' }
+  const map = { admin: 'fas fa-shield-alt', sargenteacao: 'fas fa-star', s2: 'fas fa-car', enc_mat: 'fas fa-utensils', user: 'fas fa-user', militar: 'fas fa-id-badge' }
   return map[r] || 'fas fa-user'
 }
 
@@ -242,7 +251,8 @@ const openEdit = (user) => {
     subunidade: user.subunidade || '',
     nome: user.nome || '',
     posto_grad: user.posto_grad || '',
-    militar_id: user.militar_id || ''
+    militar_id: user.militar_id || '',
+    resetar_primeiro_acesso: false
   }
   showModal.value = true
 }
@@ -261,6 +271,7 @@ const handleSave = async () => {
         edit_id: editId.value,
         new_user_role: form.value.role,
         new_user_pass: form.value.senha,
+        resetar_primeiro_acesso: form.value.resetar_primeiro_acesso ? 1 : 0,
         ativo: form.value.ativo,
         new_user_subunidade: form.value.subunidade,
         nome: form.value.nome,

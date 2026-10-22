@@ -24,6 +24,14 @@ export const AuthService = {
     })
   },
 
+  async primeiroAcesso(payload) {
+    return apiFetchJson('/sismil/backend/api/auth/primeiro-acesso', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+  },
+
   async logout() {
     return apiFetchJson('/sismil/backend/api/auth/logout', {
       method: 'POST'
